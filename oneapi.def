@@ -17,15 +17,15 @@ apt-get install -y  gfortran    make ssh patch curl subversion wget unzip perl g
 
 ## Install ONEAPI
 wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB -O - | apt-key add -
-apt update
 add-apt-repository "deb https://apt.repos.intel.com/oneapi all main"
+apt update
 apt install intel-basekit intel-hpckit intel-aikit -y
-bash -c "source /opt/intel/oneapi/setvars.sh"
 
 
 %environment
 
-source /opt/intel/oneapi/setvars.sh
+bash -c "source /opt/intel/oneapi/setvars.sh"
 
 %runscript
 exec /bin/bash "$@"
+

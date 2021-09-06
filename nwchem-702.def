@@ -1,0 +1,92 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+export DEBIAN_FRONTEND=noninteractive
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+export SINGULARITY_SHELL=/bin/bash
+export SHELL=/bin/bash
+apt-get update \
+&& apt-get -y upgrade \
+&& apt-get install -y  gfortran g++  make ssh patch curl subversion wget unzip perl git file python3 python3-dev gnupg2 software-properties-common \
+&& cd /tmp  \
+&& wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB \
+&& apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB  \
+&& rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB  \
+&& echo "deb https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list \
+&& add-apt-repository "deb https://apt.repos.intel.com/oneapi all main" \
+&& apt-get update \
+&& apt install -y intel-oneapi-ifort intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic \
+&& apt-get clean
+
+## Installing NWCHEM
+export ARMCI_NETWORK=MPI-PR
+export NWCHEM_TOP=/apps/nwchem-7.0.2-release
+export NWCHEM_TARGET=LINUX64
+export NWCHEM_MODULES="all"
+export BLASOPT=" -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl"
+export LAPACK_LIB="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl"
+export SCALAPACK_LIB=" -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lutil -lm -ldl"
+export BLAS_SIZE=8
+export SCALAPACK_SIZE=8
+export USE_64TO32=y
+export USE_FPICF=y
+export USE_MPI=y
+export USE_MPIF=y
+export USE_MPIF4=y
+export FC=ifort
+export CC=icc
+export CXX=icpc
+mkdir -pv /apps
+
+bash -c "source /opt/intel/oneapi/setvars.sh;  \
+cd /apps ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
+&& cd $NWCHEM_TOP/src \
+&&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
+&& make nwchem_config && make FC=ifort " 
+
+mkdir -pv /apps/nwchem/bin
+mkdir -pv /apps/nwchem/data
+cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /apps/nwchem/bin
+cd /apps/nwchem/bin
+chmod 755 nwchem
+cd $NWCHEM_TOP/src/basis
+cp -r libraries /apps/nwchem/data
+cd $NWCHEM_TOP/src
+cp -r data /apps/nwchem/
+cd $NWCHEM_TOP/src/nwpw
+cp -r libraryps /apps/nwchem/data
+rm -rf $NWCHEM_TOP
+
+
+
+%environment
+
+export NWCHEM_DIR=/apps/nwchem
+export NWCHEM_BASIS_LIBRARY=$NWCHEM_DIR/data/libraries/
+export NWCHEM_NWPW_LIBRARY=$NWCHEM_DIR/data/libraryps/
+export FFIELD=amber
+export AMBER_1=$NWCHEM_DIR/data/amber_s/
+export AMBER_2=$NWCHEM_DIR/data/amber_q/
+export AMBER_3=$NWCHEM_DIR/data/amber_x/
+export AMBER_4=$NWCHEM_DIR/data/amber_u/
+export SPCE=$NWCHEM_DIR/data/solvents/spce.rst
+export CHARMM_S=$NWCHEM_DIR/data/charmm_s/
+export CHARMM_X=$NWCHEM_DIR/data/charmm_x/
+export PATH=$PATH:$NWCHEM_DIR/bin:/opt/intel/oneapi/mpi/latest//libfabric/bin:/opt/intel/oneapi/mpi/latest//bin
+export I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+export FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/latest/libfabric/lib/prov
+export LIBRARY_PATH=/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest/lib
+export CLASSPATH=/opt/intel/oneapi/mpi/latest//lib/mpi.jar
+export LD_LIBRARY_PATH=/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/mpi/latest/lib/release:/opt/intel/oneapi/mkl/latest/lib/intel64/:/opt/intel/oneapi/mpi/latest/libfabric/lib:/opt/intel/oneapi/mpi/latest/lib/
+export CPATH=/opt/intel/oneapi/mpi/latest//include
+
+%runscript
+exec /bin/bash "$@"
+
+
