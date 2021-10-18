@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: openfoam/openfoam4-paraview50
+
+%help
+This container is for using OpenFoam 4 on UCLA's Hoffman2
+Based on OpenFOAM's DockerHub image
+https://hub.docker.com/u/openfoam
+This image uses docker://openfoam/openfoam4-paraview50
+The WM_PROJECT_DIR is set to /opt/openfoam4
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+%post
+echo "export FOAM_INST_DIR=/opt ; . /opt/openfoam4/etc/bashrc" >> $SINGULARITY_ENVIRONMENT
+
+%runscript
+GREEN='\033[0;32m'
+NOCOLOR='\033[0m'
+echo ""
+echo "OpenFOAM 4 installation is located at ${GREEN} $WM_PROJECT_DIR ${NOCOLOR}" 
+echo ""
+exec "$@"
+

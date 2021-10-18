@@ -1,0 +1,50 @@
+Bootstrap: docker
+From: centos:7
+
+%help
+This is a base CentOS 7 setup
+With GCC 10.3.0 and Intel OneAPI
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+yum -y update \
+&& yum -y upgrade \
+&& yum install -y  openssl openssl-devel zlib-devel gmp-devel mpfr-devel libmpc-devel gfortran gcc gcc-c++ libstdc++i=devel flex make ssh patch curl subversion wget unzip perl git file gnupg2 software-properties-common 
+cd /tmp  
+wget https://ftp.gnu.org/gnu/gcc/gcc-10.3.0/gcc-10.3.0.tar.gz
+tar -vxf gcc-10.3.0.tar.gz
+cd gcc-10.3.0
+./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran --disable-multilib
+make ; make install
+cd /tmp
+rm -rf gcc-10.3.0.tar.gz
+rm -rf gcc-10.3.0
+wget https://github.com/Kitware/CMake/releases/download/v3.22.0-rc1/cmake-3.22.0-rc1.tar.gz
+tar -vxf cmake-3.22.0-rc1.tar.gz
+cd cmake-3.22.0-rc1
+./bootstrap
+make ; make install
+cd /tmp
+rm -rf cmake-3.22.0-rc1*
+
+tee > /tmp/oneAPI.repo << EOF
+[oneAPI]
+name=Intel® oneAPI repository
+baseurl=https://yum.repos.intel.com/oneapi
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+EOF
+mv /tmp/oneAPI.repo /etc/yum.repos.d
+yum install -y intel-basekit intel-hpckit intel-aikit
+
+echo '. /opt/intel/oneapi/setvars.sh' >>$SINGULARITY_ENVIRONMENT
+
+%runscript
+exec /bin/bash "$@"
+
+
