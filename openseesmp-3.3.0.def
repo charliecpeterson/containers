@@ -1,0 +1,324 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+%help
+This is a image for OpenSeesMP and OpenSeesPy Ubuntu 20.04 setup
+Intel OneAPI
+- BaseKit 2021.4.0.3422
+- HPCKit 2021.4.0.3347
+- AIKit 2021.4.0.1460
+- Scotch 6.0.6
+- MUMPS 5.0.2
+- METIS 4.0.3
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+%post
+export DEBIAN_FRONTEND=noninteractive
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+export SINGULARITY_SHELL=/bin/bash
+export SHELL=/bin/bash
+apt-get update -y
+apt-get install -y flex bison python tcl-dev libmysqlclient-dev git apt-transport-https ca-certificates gnupg software-properties-common wget pkg-config build-essential make
+
+# Install Cmake 3.22.0
+cd /tmp
+wget https://github.com/Kitware/CMake/releases/download/v3.22.0-rc1/cmake-3.22.0-rc1.tar.gz
+tar -vxf cmake-3.22.0-rc1.tar.gz
+cd cmake-3.22.0-rc1
+./bootstrap
+make ; make install
+cd /tmp
+rm -rf cmake-3.22.0-rc1*
+ln -s /usr/bin/cmake3 /usr/bin/cmake
+
+# Install Intel OneAPI
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18236/l_BaseKit_p_2021.4.0.3422.sh
+bash l_BaseKit_p_2021.4.0.3422.sh -a --silent --eula accept
+rm l_BaseKit_p_2021.4.0.3422.sh
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18211/l_HPCKit_p_2021.4.0.3347.sh
+bash l_HPCKit_p_2021.4.0.3347.sh -a --silent --eula accept
+rm l_HPCKit_p_2021.4.0.3347.sh
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18235/l_AIKit_p_2021.4.0.1460.sh
+bash l_AIKit_p_2021.4.0.1460.sh -a --silent --eula accept
+rm l_AIKit_p_2021.4.0.1460.sh
+
+bash -c " source /opt/intel/oneapi/setvars.sh
+#Install openseespy
+python -m pip install openseespy
+
+
+#
+# Set up SCOTCH
+#
+cd /tmp
+wget https://gforge.inria.fr/frs/download.php/file/37622/scotch_6.0.6.tar.gz
+tar -vxf scotch_6.0.6.tar.gz
+cd scotch_6.0.6/src
+cat << 'EOF1' > Makefile.inc
+EXE             =
+LIB             = .a
+OBJ             = .o
+MAKE            = make
+AR              = ar
+ARFLAGS         = -ruv
+CAT             = cat
+CCS             = icc
+CCP             = mpiicc
+CCD             = icc -I/opt/intel/oneapi/mpi/2021.4.0/include
+CFLAGS          = -no-multibyte-chars -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_PTHREAD -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -DSCOTCH_PTHREAD -restrict -DIDXSIZE64 -DINTSIZE64
+CLIBFLAGS       =
+LDFLAGS         = -lz -lm -lrt -pthread
+CP              = cp
+LEX             = flex -Pscotchyy -olex.yy.c
+LN              = ln
+MKDIR           = mkdir
+MV              = mv
+RANLIB          = ranlib
+YACC            = bison -pscotchyy -y -b y
+EOF1
+make ptesmumps
+make install 
+cd /tmp
+rm -rf scotch*
+
+#
+#Set up parmetis
+#
+wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
+tar -vxf parmetis-4.0.3.tar.gz
+cd parmetis-4.0.3
+make config openmp=-qopenmp cc=mpiicc cxx=mpiicpc prefix=/opt/parmetis
+make ; make install
+cd metis
+mkdir -pv /opt/metis
+make config openmp=-qopenmp cc=mpiicc prefix=/opt/metis
+make ; make install
+cd /tmp
+rm -rf parmetis*
+
+#
+#Set up MUMPS
+#
+wget http://mumps.enseeiht.fr/MUMPS_5.0.2.tar.gz
+tar -vxf MUMPS_5.0.2.tar.gz
+cd MUMPS_5.0.2
+cat << 'EOF2' > Makefile.inc
+SCOTCHDIR  = /usr/local
+ISCOTCH    = -I\$(SCOTCHDIR)/include
+LSCOTCH    = -L\$(SCOTCHDIR)/lib -lptesmumps -lptscotch -lptscotcherr -lscotch
+LPORDDIR = /tmp/MUMPS_5.0.2/PORD/lib/
+IPORD    = -I/tmp/MUMPS_5.0.2/PORD/include/
+LPORD    = -L\$(LPORDDIR) -lpord
+LMETISDIR = /opt/metis
+IMETIS    = -I\$(LMETISDIR)/include
+LPARMETISDIR = /opt/parmetis
+IPARMETIS    = -I\$(LPARMETISDIR)/include
+LMETIS    = -L\$(LMETISDIR)/lib -lmetis
+LPARMETIS = -L\$(LPARMETISDIR)/lib -lparmetis
+ORDERINGSF = -Dscotch -Dmetis -Dpord -Dptscotch -Dparmetis
+ORDERINGSC  = \$(ORDERINGSF)
+LORDERINGS = \$(LPARMETIS) \$(LMETIS) \$(LPORD) \$(LSCOTCH)
+IORDERINGSF = \$(ISCOTCH)
+IORDERINGSC = \$(IPARMETIS) \$(IMETIS) \$(IPORD) \$(ISCOTCH)
+PLAT    =
+LIBEXT  = .a
+OUTC    = -o
+OUTF    = -o
+RM = /bin/rm -f
+CC = mpiicc
+FC = mpiifort
+FL = mpiifort
+AR = ar vr  
+RANLIB  = echo
+LIBPAR =  \$(MKLROOT)/lib/intel64/libmkl_blas95_ilp64.a \$(MKLROOT)/lib/intel64/libmkl_lapack95_ilp64.a \
+          -L\$(MKLROOT)/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core \
+          -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl
+CDEFS   = -DAdd_
+OPTF    = -O -no-multibyte-chars -DALLOW_NON_INIT -nofor_main -qopenmp # or -qopenmp for most recent compilers
+OPTL    = -O -no-multibyte-chars -nofor_main -qopenmp
+OPTC    = -O -no-multibyte-chars -qopenmp
+#End Optimized options
+INCS = \$(INCPAR)
+LIBS = \$(LIBPAR)
+LIBSEQNEEDED =
+EOF2
+make
+mkdir -pv /opt/mumps
+cp -r lib /opt/mumps
+cp -r include /opt/mumps
+cd /tmp
+rm -rf MUMPS*
+
+#
+# Installing OpenSEES
+#
+cd /tmp
+git clone https://github.com/OpenSees/OpenSees
+cd OpenSees
+git checkout v3.0.0
+mkdir -pv /tmp/OpenSees/lib
+mkdir -pv /tmp/OpenSees/bin
+mkdir -pv /opt/OpenSees
+cat << 'EOF3' > Makefile.def
+HOME  = /tmp
+BASE  =
+FE    = \$(HOME)/OpenSees/SRC
+PROGRAMMING_MODE = PARALLEL_INTERPRETERS
+OpenSees_PROGRAM = \$(HOME)/OpenSees/bin/OpenSeesMP
+OPERATING_SYSTEM = LINUX
+DEBUG_MODE = NO_DEBUG
+RELIABILITY = NO_RELIABILITY
+GRAPHICS = NONE
+AMDdir       = \$(HOME)/OpenSees/OTHER/AMD
+BLASdir      = \$(HOME)/OpenSees/OTHER/BLAS
+CBLASdir     = \$(HOME)/OpenSees/OTHER/CBLAS
+LAPACKdir    = \$(HOME)/OpenSees/OTHER/LAPACK
+SUPERLUdir   = \$(HOME)/OpenSees/OTHER/SuperLU_5.1.1/SRC
+SUPERLU_DISTdir   = \$(HOME)/OpenSees/OTHER/SuperLU_DIST_4.3/SRC
+ARPACKdir    = \$(HOME)/OpenSees/OTHER/ARPACK
+UMFPACKdir   = \$(HOME)/OpenSees/OTHER/UMFPACK
+METISdir     = \$(HOME)/OpenSees/OTHER/METIS
+CSPARSEdir   = \$(HOME)/OpenSees/OTHER/CSPARSE
+SRCdir       = \$(HOME)/OpenSees/SRC
+DIRS        = \$(BLASdir) \$(CBLASdir) \$(LAPACKdir) \$(AMDdir) \$(CSPARSEdir) \
+        \$(SUPERLUdir) \$(ARPACKdir) \$(UMFPACKdir) \$(SRCdir) \$(METISdir) \$(SUPERLU_DISTdir)
+FE_LIBRARY          = \$(HOME)/OpenSees/lib/libOpenSees.a
+NDARRAY_LIBRARY     = \$(HOME)/OpenSees/lib/libndarray.a
+MATMOD_LIBRARY      = \$(HOME)/OpenSees/lib/libmatmod.a
+BJMISC_LIBRARY      = \$(HOME)/OpenSees/lib/libBJmisc.a
+LAPACK_LIBRARY      = \$(HOME)/OpenSees/lib/libLapack.a
+BLAS_LIBRARY        = \$(HOME)/OpenSees/lib/libBlas.a
+SUPERLU_LIBRARY     = \$(HOME)/OpenSees/lib/libSuperLU.a
+AMD_LIBRARY         = \$(HOME)/OpenSees/lib/libAMD.a
+CBLAS_LIBRARY       = \$(HOME)/OpenSees/lib/libCBlas.a
+ARPACK_LIBRARY      = \$(HOME)/OpenSees/lib/libArpack.a
+UMFPACK_LIBRARY     = \$(HOME)/OpenSees/lib/libUmfpack.a
+METIS_LIBRARY       = \$(HOME)/OpenSees/lib/libMetis.a
+CSPARSE_LIBRARY     = \$(HOME)/OpenSees/lib/libCSparse.a
+DISTRIBUTED_SUPERLU_LIBRARY     = \$(HOME)/OpenSees/lib/libDistributedSuperLU.a
+TCL_LIBRARY = -ltcl8.6
+TCL_INCLUDES =
+GRAPHIC_LIBRARY     =
+RELIABILITY_LIBRARY =
+WIPE_LIBS       = \$(FE_LIBRARY) \
+           \$(NDARRAY_LIBRARY) \
+           \$(MATMOD_LIBRARY) \
+           \$(SUPERLU_LIBRARY) \
+           \$(ARPACK_LIBRARY) \
+           \$(AMD_LIBRARY) \
+           \$(UMFPACK_LIBRARY) \
+           \$(METIS_LIBRARY) \
+           \$(LAPACK_LIBRARY) \
+           \$(BLAS_LIBRARY) \
+           \$(CBLAS_LIBRARY) \
+           \$(DISTRIBUTED_SUPERLU_LIBRARY)
+MPI_DIR = \$(MPI_HOME)
+MPI_BIN = \$(MPI_DIR)/bin
+CC++            =  mpiicpc
+CC              =  mpiicc
+FC              =  mpiifort
+F90             =  \$(FC)
+FORTRAN         =  \$(FC)
+LINKER          =  \$(CC++)
+AR                      = ar
+ARCH            = ar
+ARFLAGS     = -q
+ARCHFLAGS   = -v -q
+RANLIB          = ranlib
+RANLIBFLAGS =
+GRAPHIC_FLAG = -D_NOGRAPHICS
+PROGRAMMING_FLAG = -D_PARALLEL_INTERPRETERS
+C++FLAGS         =  -D_LINUX -D_UNIX  \$(GRAPHIC_FLAG) \$(RELIABILITY_FLAG) \$(DEBUG_FLAG) \$(OPT_FLAG) \$(COMP_FLAG)\
+                                        \$(PROGRAMMING_FLAG)  \$(PETSC_FLAG) \$(MUMPS_FLAG) \
+                                        -D_TCL85 -D_BLAS -O3 -ffloat-store -qopenmp -std=gnu99
+CFLAGS          =  \$(GRAPHIC_FLAG) \$(RELIABILITY_FLAG) \$(DEBUG_FLAG)\$(PROGRAMMING_FLAG) \$(OPT_FLAG) \$(COMP_FLAG) -D_TCL85 -D_BLAS -O2 -qopenmp -std=gnu99
+FFLAGS          =   \$(OPT_FLAG) \$(COMP_FLAG) -O
+LINKER          = \$(CC++)
+LINKFLAGS       = -Wl,--allow-multiple-definition
+MAKE            = make
+CD              = cd
+ECHO            = echo
+RM              = rm
+RMFLAGS         = -f
+SHELL           = /bin/sh
+.SUFFIXES:
+.SUFFIXES:      .C .c .f .f90 .cpp .o .cpp
+.DEFAULT:
+	@\$(ECHO) \"Unknown target \$@, try:  make help\"
+.cpp.o:
+	@\$(ECHO) Making \$@ from \$<
+	\$(CC++) \$(C++FLAGS) \$(INCLUDES) -c \$< -o \$@
+
+.C.o:
+	@\$(ECHO) Making \$@ from \$<
+	\$(CC++) \$(C++FLAGS) \$(INCLUDES) -c \$< -o \$@
+.c.o:
+	@\$(ECHO) Making \$@ from \$<
+	\$(CC) \$(CFLAGS) -c \$< -o \$@
+.f.o:
+	@\$(ECHO) Making \$@ from \$<
+	\$(FC) \$(FFLAGS) -c \$< -o \$@
+MACHINE_LINKLIBS  = -L\$(BASE)/lib \
+                    -L\$(HOME)/lib
+HAVEPETSC = NO
+PETSCINC =
+PETSC_LIB =
+HAVEMUMPS = YES
+MUMPS = YES
+MUMPS_FLAG = -D_MUMPS
+MUMPS_DIR = /opt/mumps
+SCOTCHDIR  = /usr/local
+METISDIR = /opt/metis
+PARMETISDIR = /opt/parmetis
+MUMPS_INCLUDE = /opt/mumps/include
+PLAT    = LINUX
+MUMPS_LIB = -L\$(MUMPS_DIR)/lib \
+        \$(FE)/system_of_eqn/linearSOE/mumps/MumpsSOE.o \
+        \$(FE)/system_of_eqn/linearSOE/mumps/MumpsSolver.o \
+        \$(FE)/system_of_eqn/linearSOE/mumps/MumpsParallelSOE.o \
+        \$(FE)/system_of_eqn/linearSOE/mumps/MumpsParallelSolver.o \
+        -ldmumps -lmumps_common -lpord \
+        -L\$(SCOTCHDIR)/lib/ -lptesmumps -lptscotch -lptscotcherr -lscotch \
+                -L\$(PARMETISDIR)/lib -lparmetis \
+                -L\$(METISDIR)/lib -lmetis
+
+PARALLEL_LIB = -L\$(MKLROOT)/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl
+MACHINE_NUMERICAL_LIBS  = \$(ARPACK_LIBRARY) \
+                          \$(SUPERLU_LIBRARY) \
+                          \$(UMFPACK_LIBRARY) \
+                          \$(AMD_LIBRARY) \
+                          \$(GRAPHIC_LIBRARY)\
+                          \$(RELIABILITY_LIBRARY) \
+                          \$(DISTRIBUTED_SUPERLU_LIBRARY) \$(CSPARSE_LIBRARY) \
+                          \$(PETSC_LIB) \$(MUMPS_LIB) \$(CBLAS_LIBRARY) \$(METIS_LIBRARY)
+
+MACHINE_SPECIFIC_LIBS =  \$(PARALLEL_LIB) -lifcore -qopenmp
+MACHINE_INCLUDES = -I/usr/include \
+        -I\$(MKLROOT)/include \
+        -I\$(HOME)/include   \
+        -I\$(UMFPACKdir) \
+        -I\$(SUPERLUdir) \
+        -I\$(SUPERLU_DISTdir) \
+        -I\$(MUMPS_INCLUDE)
+include \$(FE)/Makefile.incl
+TCL_INCLUDES = -I/usr/include/tcl
+INCLUDES =  \$(TCL_INCLUDES) \$(FE_INCLUDES) \$(MACHINE_INCLUDES)
+EOF3
+make 
+cp -r bin /opt/OpenSees
+cp -r lib /opt/OpenSees
+cd /tmp
+rm -rf OpenSees*
+
+"
+
+%environment
+export PATH=/opt/OpenSees/bin:$PATH
+export LD_LIBRARY_PATH=/opt/OpenSees/lib:$LD_LIBRARY_PATH
+
+%runscript
+exec /bin/bash -c " . /opt/intel/oneapi/setvars.sh ; $@"
+
+
