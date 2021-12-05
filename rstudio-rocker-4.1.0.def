@@ -7,7 +7,7 @@ MAINTAINER Charles Peterson <cpeterson@oarc.ucla.edu>
 %post
 apt update -y
 apt install -y iproute2 bc libxml2 libxml2-dev libglpk-dev
-apt install -y libcairo2-dev
+apt install -y libcairo2-dev libbz2-dev liblzma-dev
 cat << EOF1 > /etc/rstudio/rsession.conf
 r-libs-user=~/R/SINGULARITY/rstudio-rocker-4.1.0
 EOF1
