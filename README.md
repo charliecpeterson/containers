@@ -1,5 +1,14 @@
 # Repo of container file
 
+## Singularity container
+
+Ending in .def
+
+## Docker images
+
+Dockerfile-XXX
+
+
 - base-centos7.def
 
 CentOS 7 base container with Intel's oneapi toolkit, with HPC and AI toolkits
@@ -35,4 +44,16 @@ To be ran on UCLA's Hoffman2 resource
 Container for OpenFoam version 4
 
 To be ran on UCLA's Hoffman2 resource
+
+
+## Docker images
+
+- Dockerfile-base-rocky8.5
+
+Dockerfile to create rocky 8.5 with GCC and Intel's oneapi toolkit
+
+- Dockerfile-nwchem-7.0.2
+
+Dockerfile to build nwchem with the base-rocky8.5 image 
+
 

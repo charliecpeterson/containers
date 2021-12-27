@@ -1,0 +1,40 @@
+Bootstrap: docker
+From: peridigm/trilinos 
+
+%help
+Setup for peridigm
+https://github.com/peridigm/peridigm
+bootstrap from dockerhub://peridigm/trillinos
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+apt-get -yq --allow-releaseinfo-change update 
+apt-get -yq install openmpi-bin openssh-server
+
+cd /tmp
+git clone https://github.com/peridigm/peridigm
+cd peridigm
+##Checkout commit from 12/9/2021
+git checkout 57d7836bfb4234b3216cffc9798c96731c5c416c
+mkdir build ; cd build
+cmake \
+-D CMAKE_BUILD_TYPE:STRING=Release \
+-D Trilinos_DIR:PATH=/usr/local/trilinos \
+-D CMAKE_C_COMPILER:STRING=mpicc \
+-D CMAKE_CXX_COMPILER:STRING=mpicxx \
+-D CMAKE_INSTALL_PREFIX=/usr/local/peridigm \
+..
+make ; make install
+cd /tmp
+rm -rf perdigm
+
+%environment
+export PATH=/usr/local/peridigm/bin:/usr/local/trilinos/bin:$PATH
+
+%runscript
+exec /bin/bash "$@"
+
+

@@ -1,9 +1,9 @@
 Bootstrap: docker
-From: centos:7
+From: rockylinux/rockylinux:8.5
 
 %help
-This is a base CentOS 7 setup
-GCC 10.3.0 
+This is the Dirac 21.1 install with Rocky 8.5 setup
+GCC 8.3.0
 Intel OneAPI 
 - BaseKit 2021.4.0.3422
 - HPCKit 2021.4.0.3347
@@ -25,19 +25,19 @@ wget https://github.com/Kitware/CMake/releases/download/v3.22.0-rc1/cmake-3.22.0
 tar -vxf cmake-3.22.0-rc1.tar.gz
 cd cmake-3.22.0-rc1
 ./bootstrap
-make ; make install
+make -j8 ; make install
 cd /tmp
 rm -rf cmake-3.22.0-rc1*
 
-#Install GCC 10.3.0
-wget https://ftp.gnu.org/gnu/gcc/gcc-10.3.0/gcc-10.3.0.tar.gz
-tar -vxf gcc-10.3.0.tar.gz
-cd gcc-10.3.0
+#Install GCC 8.3.0
+wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz
+tar -vxf gcc-8.3.0.tar.gz
+cd gcc-8.3.0
 ./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran --disable-multilib
-make ; make install
+make -j8 ; make install
 cd /tmp
-rm -rf gcc-10.3.0.tar.gz
-rm -rf gcc-10.3.0
+rm -rf gcc-8.3.0.tar.gz
+rm -rf gcc-8.3.0
 
 # Install Intel OneAPI
 wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18236/l_BaseKit_p_2021.4.0.3422.sh
@@ -50,12 +50,26 @@ wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18235/l_AIKit_p
 bash l_AIKit_p_2021.4.0.1460.sh -a --silent --eula accept
 rm l_AIKit_p_2021.4.0.1460.sh
 
-yum remove -y gcc gcc-c++ make wget unzip  gmp-devel mpfr-devel libmpc-devel
+bash -c "source /opt/intel/oneapi/setvars.sh
+#Install Dirac 21.1
+mkdir -pv /opt/dirac
+cd /tmp
+wget https://zenodo.org/record/5512841/files/DIRAC-21.1-Source.tar.gz
+tar -vxf DIRAC-21.1-Source.tar.gz
+cd DIRAC-21.1-Source
+./setup --fc=mpiifort --cc=mpiicc --cxx=mpiicpc --mpi --mkl=parallel --prefix=/opt/dirac
+cd build
+make ; make install
+cd /tmp
+rm -rf DIRAC-21.1-Source*
+"
 
 %environment
-source /opt/intel/oneapi/setvars.sh
+export PATH=/opt/dirac/bin:$PATH
+export PATH=/opt/openmpi/bin:$PATH
+export LD_LIBRARY_PATH=/opt/openmpi/lib:$LD_LIBRARY_PATH
 
 %runscript
-exec /bin/bash "$@"
+exec /bin/bash -c "source /opt/intel/oneapi/setvars.sh ; $@"
 
 

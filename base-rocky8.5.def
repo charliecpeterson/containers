@@ -1,8 +1,8 @@
 Bootstrap: docker
-From: centos:7
+From: rockylinux/rockylinux:8.5
 
 %help
-This is a base CentOS 7 setup
+This is a base Rocky 8.5 setup
 GCC 10.3.0 
 Intel OneAPI 
 - BaseKit 2021.4.0.3422
@@ -49,8 +49,6 @@ rm l_HPCKit_p_2021.4.0.3347.sh
 wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18235/l_AIKit_p_2021.4.0.1460.sh
 bash l_AIKit_p_2021.4.0.1460.sh -a --silent --eula accept
 rm l_AIKit_p_2021.4.0.1460.sh
-
-yum remove -y gcc gcc-c++ make wget unzip  gmp-devel mpfr-devel libmpc-devel
 
 %environment
 source /opt/intel/oneapi/setvars.sh

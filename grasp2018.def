@@ -1,0 +1,73 @@
+Bootstrap: docker
+From: rockylinux/rockylinux:8.4
+
+%help
+Grasp2018
+Rocky 8.4 setup
+GCC 8.2.0
+Intel OneAPI 
+- BaseKit 2021.4.0.3422
+- HPCKit 2021.4.0.3347
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+yum -y update \
+&& yum install -y  cmake pkgconfig gcc gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel
+yum groupinstall -y "Development Tools"
+yum update
+
+
+#Install GCC 8.2.0
+wget https://ftp.gnu.org/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
+tar -vxf gcc-8.2.0.tar.gz
+cd gcc-8.2.0
+./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran --disable-multilib
+make ; make install
+cd /tmp
+rm -rf gcc-8.2.0.tar.gz
+rm -rf gcc-8.2.0
+
+# Install Intel OneAPI
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18236/l_BaseKit_p_2021.4.0.3422.sh
+bash l_BaseKit_p_2021.4.0.3422.sh -a --silent --eula accept
+rm l_BaseKit_p_2021.4.0.3422.sh
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18211/l_HPCKit_p_2021.4.0.3347.sh
+bash l_HPCKit_p_2021.4.0.3347.sh -a --silent --eula accept
+rm l_HPCKit_p_2021.4.0.3347.sh
+
+source /opt/intel/oneapi/setvars.sh
+#Installing GRASP2018
+cd /opt
+export FC=ifort
+export FC_FLAGS="-O3 -fno-automatic"
+export FC_LD="-mkl=sequential"
+export FC_MPI=mpiifort
+export GRASP="/opt/grasp"
+export   FC_MPILD="-mkl=sequential"
+export   FC_MPIFLAGS="${FC_FLAGS}"
+export   CC=icc
+export   CXX=icpc
+# download code from github
+# download from last commit 7/10/2021
+git clone https://github.com/compas/grasp
+cd grasp
+git checkout 327ab842bba2f1b5a0abd1316d5639e7f33905bf
+# Creating build dir
+mkdir build
+cd build
+# Running cmake and installing code
+cmake  ..
+make ; make install
+
+%environment
+export GRASP="/opt/grasp"
+export PATH=${GRASP}/bin:$PATH
+
+%runscript
+exec /bin/bash -c "source /opt/intel/oneapi/setvars.sh
+$@
+"
+

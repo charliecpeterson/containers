@@ -1,0 +1,110 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+%help
+This is a container for Anacapa
+https://github.com/limey-bean/Anacapa
+Anacapa software located at
+/opt/Anacapa
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+export DEBIAN_FRONTEND=noninteractive
+apt -y update ; apt -y upgrade 
+apt install -y libxt-dev libcairo2-dev libpq-dev make libjpeg-dev libssl-dev libxml2-dev libbz2-dev liblzma-dev libpcre++-dev libcurl4 libcurl4-openssl-dev libpango1.0-dev wget git gcc g++ gfortran libreadline-dev zlib1g-dev
+
+#Install anaconda
+cd /tmp
+wget https://repo.anaconda.com/archive/Anaconda2-2019.10-Linux-x86_64.sh
+bash Anaconda2-2019.10-Linux-x86_64.sh -b -p /opt/anaconda
+cat << EOF1 > environment.yml
+name: anacapa
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - biopython=1.70=np112py27_1
+  - blas=1.0=mkl
+  - bowtie2=2.3.5.1=py27he513fc3_0
+  - bz2file=0.98=py27_1
+  - ca-certificates=2021.10.26=h06a4308_2
+  - certifi=2020.6.20=pyhd3eb1b0_3
+  - cutadapt=1.16=py27_2
+  - cython=0.29.14=py27he6710b0_0
+  - fastx_toolkit=0.0.14=2
+  - freetype=2.11.0=h70c0345_0
+  - gnuplot=4.6.0=1
+  - intel-openmp=2021.4.0=h06a4308_3561
+  - jpeg=9d=h7f8727e_0
+  - libffi=3.3=he6710b0_2
+  - libgcc=7.2.0=h69d50b8_2
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libgfortran-ng=7.3.0=hdf63c60_0
+  - libgtextutils=0.7=he1b5a44_6
+  - libpng=1.6.37=hbc83047_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - libtiff=4.2.0=h85742a9_0
+  - libwebp-base=1.2.0=h27cfd23_0
+  - lz4-c=1.9.3=h295c915_1
+  - mkl=2018.0.3=1
+  - mmtf-python=1.0.2=py27_0
+  - msgpack-python=0.6.1=py27hfd86e86_1
+  - ncurses=6.3=h7f8727e_2
+  - nose=1.3.7=py27_2
+  - numpy=1.12.1=py27h9378851_1
+  - olefile=0.46=py27_0
+  - perl=5.26.2=h14c3975_0
+  - pigz=2.6=h27cfd23_0
+  - pillow=6.2.1=py27h34e0f95_0
+  - pip=19.3.1=py27_0
+  - python=2.7.18=ha1903f6_2
+  - readline=8.1=h27cfd23_0
+  - reportlab=3.5.26=py27he686d34_0
+  - setuptools=44.0.0=py27_0
+  - sqlite=3.36.0=hc218d9a_0
+  - tbb=2020.2=hff7bd54_0
+  - tk=8.6.11=h1ccaba5_0
+  - wheel=0.37.0=pyhd3eb1b0_1
+  - xopen=0.7.3=py_0
+  - xz=5.2.5=h7b6447c_0
+  - zlib=1.2.11=h7b6447c_3
+  - zstd=1.4.9=haebb681_0
+prefix: /opt/anaconda/envs/anacapa
+EOF1
+bash -c "source /opt/anaconda/etc/profile.d/conda.sh
+conda env create -f environment.yml
+"
+rm environment.yml
+rm Anaconda2-2019.10-Linux-x86_64.sh
+
+cd /tmp
+wget https://cloud.r-project.org/src/base/R-3/R-3.4.2.tar.gz
+tar -vxf R-3.4.2.tar.gz
+cd R-3.4.2
+CXX11=g++ CXX14=g++ CXX17=g++ CXX20=g++ CXX=g++ CC=gcc FC=gfortran ./configure  --with-x=no --enable-R-shlib --enable-BLAS-shlib --enable-threads=posix --enable-memory-profiling
+make ; make install
+R -e 'install.packages(c("BioManager","MASS","mgcv","rpart","ggplot2","plyr","dplyr","seqRFLP","reshape2","tibble","devtools","Matrix","mgcv","readr","stringr","vegan","plotly","optparse","ggrepel","cluster"),dependencies = TRUE,repos="http://cran.r-project.org")'
+R -e 'devtools::install_github("cran/latticeExtra",ref="R-3.0.3")'
+R -e 'devtools::install_github("Bioconductor/BiocParallel",ref="RELEASE_3_8")'
+R -e 'source("http://bioconductor.org/biocLite.R") ; biocLite(c("phyloseq","genefilter","impute","Biostrings"))'
+R -e 'devtools::install_github("benjjneb/dada2",ref="v1.6")'
+cd /tmp
+rm -rf R-3.4.2*
+
+cd /opt
+git clone https://github.com/charliecpeterson/Anacapa
+cd /opt/Anacapa/Anacapa_db
+wget https://www.drive5.com/muscle/downloads3.8.31/muscle3.8.31_i86linux64.tar.gz
+tar -vxf muscle3.8.31_i86linux64.tar.gz
+rm muscle3.8.31_i86linux64.tar.gz
+ln -s muscle3.8.31_i86linux64 muscle
+
+%runscript
+exec bash -c "source /opt/anaconda/etc/profile.d/conda.sh
+conda activate anacapa
+$@"
+

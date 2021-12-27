@@ -1,0 +1,34 @@
+#
+FROM rockylinux/rockylinux:8.5 AS builder
+RUN mkdir -p /opt/cmake
+# install cmake
+RUN cd /opt && \
+    curl -LO https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.sh && \
+    mkdir -p /opt/cmake/usr/local && \
+    /bin/bash cmake-3.20.2-linux-x86_64.sh --prefix=/opt/cmake/usr/local --skip-license
+# install OS tools
+RUN dnf update -y
+RUN dnf install -y make gcc gcc-c++ kernel-devel pkgconfig which bzip2 \
+&& yum -y update \
+&& yum -y upgrade \
+&& yum install -y  pkgconfig gcc gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel \
+&& yum groupinstall -y "Development Tools" \
+#Install GCC 10.3.0
+&&  mkdir -p /opt/gcc ; cd /opt \
+&& wget https://ftp.gnu.org/gnu/gcc/gcc-10.3.0/gcc-10.3.0.tar.gz \
+&& tar -vxf gcc-10.3.0.tar.gz \
+&& cd gcc-10.3.0 \
+&& ./configure --prefix=/opt/gcc --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran --disable-multilib \
+&& make ; make install \
+&& cd /opt \
+&& rm -rf gcc-10.3.0.tar.gz \
+&& rm -rf gcc-10.3.0 \
+&& wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18236/l_BaseKit_p_2021.4.0.3422.sh \
+&& bash l_BaseKit_p_2021.4.0.3422.sh -a --silent --eula accept \
+&& rm l_BaseKit_p_2021.4.0.3422.sh \
+&& wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18211/l_HPCKit_p_2021.4.0.3347.sh \
+&& bash l_HPCKit_p_2021.4.0.3347.sh -a --silent --eula accept \
+&& rm l_HPCKit_p_2021.4.0.3347.sh \
+&& wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18235/l_AIKit_p_2021.4.0.1460.sh \
+&& bash l_AIKit_p_2021.4.0.1460.sh -a --silent --eula accept \
+&& rm l_AIKit_p_2021.4.0.1460.sh

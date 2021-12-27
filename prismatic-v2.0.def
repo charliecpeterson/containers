@@ -1,0 +1,57 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+%help
+This is a container for Prismatic
+https://prism-em.com/docs-compiling/
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+%post
+export DEBIAN_FRONTEND=noninteractive
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+export SINGULARITY_SHELL=/bin/bash
+apt update 
+apt install -y make cmake libboost-all-dev libfftw3-dev libxml2-dev build-essential wget unzip  git gcc g++ 
+cd /tmp
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin
+mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget https://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
+dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
+apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
+apt-get update
+apt-get -y install cuda
+
+mkdir -pv /apps/hdf5
+cd /tmp
+git clone https://github.com/HDFGroup/hdf5
+cd hdf5
+git checkout hdf5-1_12_1
+./configure --prefix=/apps/hdf5  --enable-cxx --enable-float --enable-shared --enable-threads
+make ; make install
+export HDF5_ROOT=/apps/hdf5
+export HDF5_DIR=/apps/hdf5
+export HDF5LIBS=/apps/hdf5
+export HDF5_INC=/apps/hdf5/include
+export HDF5_LIB=/apps/hdf5/lib
+export PATH=/apps/hdf5/bin:$PATH
+cd /tmp
+rm -rf hdf5
+
+cd /opt
+git clone https://github.com/prism-em/prismatic
+cd prismatic
+git checkout v2.0
+mkdir build
+cd build
+cmake ../ -DPRISMATIC_ENABLE_CLI=1 -DPRISMATIC_ENABLE_GPU=1
+make ; make install
+cd /opt
+rm -rf prismatic
+
+%environment
+export LD_LIBRARY_PATH=/apps/hdf5/lib:$LD_LIBRARY_PATH
+export PATH=/apps/hdf5/bin:$PATH
+
+
