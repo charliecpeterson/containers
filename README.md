@@ -4,11 +4,6 @@
 
 Ending in .def
 
-## Docker images
-
-Dockerfile-XXX
-
-
 - base-centos7.def
 
 CentOS 7 base container with Intel's oneapi toolkit, with HPC and AI toolkits
