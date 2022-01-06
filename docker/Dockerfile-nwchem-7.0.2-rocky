@@ -4,9 +4,9 @@ ENV ARMCI_NETWORK=MPI-PR
 ENV NWCHEM_TOP=/apps/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
 ENV NWCHEM_MODULES="all" 
-ENV BLASOPT=" -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl -static" 
-ENV LAPACK_LIB="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl -static" 
-ENV SCALAPACK_LIB=" -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lutil -lm -ldl -static"  
+ENV BLASOPT=" -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl" 
+ENV LAPACK_LIB="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl" 
+ENV SCALAPACK_LIB=" -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lutil -lm -ldl"  
 ENV BLAS_SIZE=8 
 ENV SCALAPACK_SIZE=8 
 ENV USE_64TO32=y 
@@ -22,7 +22,7 @@ RUN yum -y update ; yum install -y  wget make git curl wget  \
   && cd /apps ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
   && cd $NWCHEM_TOP/src \
   &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
-  && make FC=ifort CC=icc CXX=icpc \
+  && make nwchem_config && make FC=ifort \
   && mkdir -pv /apps/nwchem/bin \
   && mkdir -pv /apps/nwchem/data \
   && cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /apps/nwchem/bin \
