@@ -1,0 +1,114 @@
+# Base GCC/Oneapi building container image
+# Ubuntu 20.04
+# Charles Peterson <charliecpeterson@gmail.com>
+# Created 1/2022
+
+#Bulding Cmake
+FROM ubuntu:20.04 as buildcmake
+RUN mkdir -p /opt/apps/cmake
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl  \
+    && rm -rf /var/lib/apt/lists/*
+RUN cd /opt  \
+    && curl -LO https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.sh \
+    && mkdir -p /opt/apps/usr/local  \
+    && /bin/bash cmake-3.20.2-linux-x86_64.sh --prefix=/opt/apps/cmake --skip-license
+RUN rm -rf /opt/apps/cmake/include \
+    && rm -rf /opt/apps/cmake/lib/pkgconfig \
+    && find /opt/apps -name "*.a" -exec rm -f {} \; || echo ""
+RUN rm -rf /opt/apps/cmake/share/doc
+RUN rm -rf /opt/apps/cmake/share/man
+RUN rm -rf /opt/apps/cmake/man
+
+##Building Intel OneAPI version 2021.4
+FROM ubuntu:20.04 as buildintel
+ENV oneapi_version=2021.4
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    curl ca-certificates gpg-agent software-properties-common  \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add -
+RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    wget ca-certificates gcc g++ pkg-config gnupg  \
+  && rm -rf /var/lib/apt/lists/* \
+  && wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18236/l_BaseKit_p_2021.4.0.3422.sh \
+  && bash l_BaseKit_p_2021.4.0.3422.sh -a --silent --eula accept --components intel.oneapi.lin.tbb.devel:intel.oneapi.lin.dpcpp-cpp-compiler:intel.oneapi.lin.mkl.devel:intel.oneapi.lin.dpl:intel.oneapi.lin.dpcpp_dbg \
+  && rm l_BaseKit_p_2021.4.0.3422.sh \
+  && wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18211/l_HPCKit_p_2021.4.0.3347.sh \
+  && bash l_HPCKit_p_2021.4.0.3347.sh -a --silent --eula accept --components intel.oneapi.lin.mpi.devel:intel.oneapi.lin.ifort-compiler:intel.oneapi.lin.dpcpp-cpp-compiler-pro \
+  && rm l_HPCKit_p_2021.4.0.3347.sh \
+  && wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18235/l_AIKit_p_2021.4.0.1460.sh \
+  && bash l_AIKit_p_2021.4.0.1460.sh  -a --silent --eula accept --components intel.oneapi.lin.python3:intel.oneapi.lin.pytorch:intel.oneapi.lin.tensorflow \
+  && rm l_AIKit_p_2021.4.0.1460.sh \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+
+FROM ubuntu:20.04
+##Installing GCC version 10.3.0
+ENV gcc_version=10.3.0
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates make wget gnupg gcc g++ gcc-multilib \
+  && rm -rf /var/lib/apt/lists/* \
+  && wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_version}/gcc-${gcc_version}.tar.gz \
+  && tar -vxf gcc-${gcc_version}.tar.gz ; rm gcc-${gcc_version}.tar.gz \
+  && cd gcc-${gcc_version} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
+  && ./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran  \
+  && make -j "$(nproc)" && make install \
+  && cd .. ; rm -rf gcc-${gcc_version} \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+RUN set -ex; \
+	dpkg-divert --divert /usr/bin/gcc.orig --rename /usr/bin/gcc; \
+	dpkg-divert --divert /usr/bin/g++.orig --rename /usr/bin/g++; \
+	dpkg-divert --divert /usr/bin/gfortran.orig --rename /usr/bin/gfortran
+
+COPY --from=buildcmake /opt/apps/cmake/ /opt/cmake/
+COPY --from=buildintel /opt/intel/ /opt/intel/
+
+ENV LANG=C.UTF-8
+ENV CCL_CONFIGURATION='cpu_gpu_dpcpp'
+ENV CLASSPATH='/opt/intel/oneapi/mpi/latest//lib/mpi.jar'
+ENV CMAKE_PREFIX_PATH='/opt/intel/oneapi/tbb/latest/env/..:/opt/intel/oneapi/dal/latest'
+ENV CMPLR_ROOT='/opt/intel/oneapi/compiler/latest'
+ENV CONDA_DEFAULT_ENV='intelpython-python3.7'
+ENV CONDA_EXE='/opt/intel/oneapi/intelpython/latest/bin/conda'
+ENV CONDA_PREFIX='/opt/intel/oneapi/intelpython/latest'
+ENV CONDA_PROMPT_MODIFIER='(intelpython-python3.7) '
+ENV CONDA_PYTHON_EXE='/opt/intel/oneapi/intelpython/latest/bin/python'
+ENV CONDA_SHLVL='1'
+ENV CPATH='$CPATH:/opt/apps/gcc/include:/opt/intel/oneapi/tbb/latest/env/../include:/opt/intel/oneapi/mpi/latest//include:/opt/intel/oneapi/mkl/latest/include:/opt/intel/oneapi/ippcp/latest/include:/opt/intel/oneapi/ipp/latest/include:/opt/intel/oneapi/dpl/latest/linux/include:/opt/intel/oneapi/dev-utilities/latest/include:/opt/intel/oneapi/dal/latest/include:/opt/intel/oneapi/compiler/latest/linux/include'
+ENV DAL_MAJOR_BINARY='1'
+ENV DAL_MINOR_BINARY='1'
+ENV DPL_ROOT='/opt/intel/oneapi/dpl/latest'
+ENV FI_PROVIDER_PATH='/opt/intel/oneapi/mpi/latest//libfabric/lib/prov:/usr/lib64/libfabric'
+ENV FPGA_VARS_ARGS=''
+ENV FPGA_VARS_DIR='/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga'
+ENV GDB_INFO='/opt/intel/oneapi/debugger/latest/documentation/info/'
+ENV INFOPATH='/opt/intel/oneapi/debugger/latest/gdb/intel64/lib'
+ENV INSPECTOR_2021_DIR='/opt/intel/oneapi/inspector/latest'
+ENV INTELFPGAOCLSDKROOT='/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga'
+ENV INTEL_LICENSE_FILE='/opt/intel/licenses:/root/intel/licenses:/opt/intel/licenses:/root/intel/licenses:/Users/Shared/Library/Application Support/Intel/Licenses'
+ENV INTEL_PYTHONHOME='/opt/intel/oneapi/debugger/latest/dep'
+ENV IPPCP_TARGET_ARCH='intel64'
+ENV IPPROOT='/opt/intel/oneapi/ipp/latest'
+ENV IPP_TARGET_ARCH='intel64'
+ENV I_MPI_ROOT='/opt/intel/oneapi/mpi/latest'
+ENV LD_LIBRARY_PATH='/opt/apps/gcc/lib64:/opt/apps/gcc/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/debugger/latest/gdb/intel64/lib:/opt/intel/oneapi/debugger/latest/libipt/intel64/lib:/opt/intel/oneapi/debugger/latest/dep/lib:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/lib:/opt/intel/oneapi/compiler/latest/linux/lib/x64:/opt/intel/oneapi/compiler/latest/linux/lib/emu:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin'
+ENV LIBRARY_PATH='/opt/apps/gcc/lib64:/opt/apps/gcc/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ippcp/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/latest/linux/lib'
+ENV MANPATH='/opt/intel/oneapi/mpi/latest/man:/opt/intel/oneapi/debugger/latest/documentation/man:/opt/intel/oneapi/compiler/latest/documentation/en/man/common'
+ENV MKLROOT='/opt/intel/oneapi/mkl/latest'
+ENV NLSPATH='/opt/intel/oneapi/mkl/latest/lib/intel64/locale/%l_%t/%N'
+ENV OCL_ICD_FILENAMES='libintelocl_emu.so:libalteracl.so:/opt/intel/oneapi/compiler/latest/linux/lib/x64/libintelocl.so'
+ENV ONEAPI_ROOT='/opt/intel/oneapi'
+ENV PATH='/opt/apps/cmake/bin:/opt/apps/gcc/bin:/opt/intel/oneapi/mpi/latest//libfabric/bin:/opt/intel/oneapi/mpi/latest//bin:/opt/intel/oneapi/mkl/latest/bin/intel64:/opt/intel/oneapi/intelpython/latest/bin:/opt/intel/oneapi/intelpython/latest/condabin:/opt/intel/oneapi/inspector/latest/bin64:/opt/intel/oneapi/dev-utilities/latest/bin:/opt/intel/oneapi/debugger/latest/gdb/intel64/bin:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/llvm/aocl-bin:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/bin:/opt/intel/oneapi/compiler/latest/linux/bin/intel64:/opt/intel/oneapi/compiler/latest/linux/bin:/opt/intel/oneapi/clck/latest/bin/intel64:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+ENV PKG_CONFIG_PATH='/opt/intel/oneapi/tbb/latest/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/latest/lib/pkgconfig:/opt/intel/oneapi/mkl/latest/lib/pkgconfig:/opt/intel/oneapi/dal/latest/lib/pkgconfig:/opt/intel/oneapi/compiler/latest/lib/pkgconfig'
+ENV PYTHONPATH='/opt/intel/oneapi/advisor/latest/pythonapi'
+ENV SETVARS_COMPLETED='1'
+ENV SETVARS_VARS_PATH='/opt/intel/oneapi/vtune/latest/env/vars.sh'
+ENV TBBROOT='/opt/intel/oneapi/tbb/latest/env/..'
+ENV _CE_CONDA=''
+ENV _CE_M=''

@@ -57,6 +57,8 @@ cd /tmp
 wget https://zenodo.org/record/5512841/files/DIRAC-21.1-Source.tar.gz
 tar -vxf DIRAC-21.1-Source.tar.gz
 cd DIRAC-21.1-Source
+sed -i 's/N1 = 24/N1 = 32/g' src/dirrci/goscom.h
+sed -i 's/N2 = 4000/N2 = 5000/g' src/dirrci/goscom.h
 ./setup --fc=mpiifort --cc=mpiicc --cxx=mpiicpc --mpi --mkl=parallel --prefix=/opt/dirac
 cd build
 make ; make install

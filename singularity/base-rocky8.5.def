@@ -1,0 +1,101 @@
+Bootstrap: docker
+From: rockylinux/rockylinux:8.5
+
+%help
+This is a base Rocky 8.5 setup
+GCC 10.3.0 
+Intel OneAPI 
+- BaseKit 2021.4.0.3422
+- HPCKit 2021.4.0.3347
+- AIKit 2021.4.0.1460
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+yum -y update \
+&& yum -y upgrade \
+&& yum install -y  pkgconfig gcc gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel
+yum groupinstall -y "Development Tools"
+
+# Install Cmake 3.22.0
+cd /tmp  
+wget https://github.com/Kitware/CMake/releases/download/v3.22.0-rc1/cmake-3.22.0-rc1.tar.gz
+tar -vxf cmake-3.22.0-rc1.tar.gz
+cd cmake-3.22.0-rc1
+./bootstrap
+make ; make install
+cd /tmp
+rm -rf cmake-3.22.0-rc1*
+
+#Install GCC 10.3.0
+wget https://ftp.gnu.org/gnu/gcc/gcc-10.3.0/gcc-10.3.0.tar.gz
+tar -vxf gcc-10.3.0.tar.gz
+cd gcc-10.3.0
+./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran --disable-multilib
+make ; make install
+cd /tmp
+rm -rf gcc-10.3.0.tar.gz
+rm -rf gcc-10.3.0
+
+# Install Intel OneAPI
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18236/l_BaseKit_p_2021.4.0.3422.sh
+bash l_BaseKit_p_2021.4.0.3422.sh -a --silent --eula accept --components intel.oneapi.lin.tbb.devel:intel.oneapi.lin.dpcpp-cpp-compiler:intel.oneapi.lin.mkl.devel:intel.oneapi.lin.dpl:intel.oneapi.lin.dpcpp_dbg
+rm l_BaseKit_p_2021.4.0.3422.sh
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18211/l_HPCKit_p_2021.4.0.3347.sh
+ bash l_HPCKit_p_2021.4.0.3347.sh -a --silent --eula accept --components intel.oneapi.lin.mpi.devel:intel.oneapi.lin.ifort-compiler:intel.oneapi.lin.dpcpp-cpp-compiler-pro
+rm l_HPCKit_p_2021.4.0.3347.sh
+wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18235/l_AIKit_p_2021.4.0.1460.sh
+bash l_AIKit_p_2021.4.0.1460.sh  -a --silent --eula accept --components intel.oneapi.lin.python3:intel.oneapi.lin.pytorch:intel.oneapi.lin.tensorflow
+rm l_AIKit_p_2021.4.0.1460.sh
+
+%environment
+export LANG=C.UTF-8
+export CCL_CONFIGURATION='cpu_gpu_dpcpp'
+export CLASSPATH='/opt/intel/oneapi/mpi/latest//lib/mpi.jar'
+export CMAKE_PREFIX_PATH='/opt/intel/oneapi/tbb/latest/env/..:/opt/intel/oneapi/dal/latest'
+export CMPLR_ROOT='/opt/intel/oneapi/compiler/latest'
+export CONDA_DEFAULT_ENV='intelpython-python3.7'
+export CONDA_EXE='/opt/intel/oneapi/intelpython/latest/bin/conda'
+export CONDA_PREFIX='/opt/intel/oneapi/intelpython/latest'
+export CONDA_PROMPT_MODIFIER='(intelpython-python3.7) '
+export CONDA_PYTHON_EXE='/opt/intel/oneapi/intelpython/latest/bin/python'
+export CONDA_SHLVL='1'
+export CPATH='/opt/intel/oneapi/tbb/latest/env/../include:/opt/intel/oneapi/mpi/latest//include:/opt/intel/oneapi/mkl/latest/include:/opt/intel/oneapi/ippcp/latest/include:/opt/intel/oneapi/ipp/latest/include:/opt/intel/oneapi/dpl/latest/linux/include:/opt/intel/oneapi/dev-utilities/latest/include:/opt/intel/oneapi/dal/latest/include:/opt/intel/oneapi/compiler/latest/linux/include'
+export DAL_MAJOR_BINARY='1'
+export DAL_MINOR_BINARY='1'
+export DPL_ROOT='/opt/intel/oneapi/dpl/latest'
+export FI_PROVIDER_PATH='/opt/intel/oneapi/mpi/latest//libfabric/lib/prov:/usr/lib64/libfabric'
+export FPGA_VARS_ARGS=''
+export FPGA_VARS_DIR='/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga'
+export GDB_INFO='/opt/intel/oneapi/debugger/latest/documentation/info/'
+export INFOPATH='/opt/intel/oneapi/debugger/latest/gdb/intel64/lib'
+export INSPECTOR_2021_DIR='/opt/intel/oneapi/inspector/latest'
+export INTELFPGAOCLSDKROOT='/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga'
+export INTEL_LICENSE_FILE='/opt/intel/licenses:/root/intel/licenses:/opt/intel/licenses:/root/intel/licenses:/Users/Shared/Library/Application Support/Intel/Licenses'
+export INTEL_PYTHONHOME='/opt/intel/oneapi/debugger/latest/dep'
+export IPPCP_TARGET_ARCH='intel64'
+export IPPROOT='/opt/intel/oneapi/ipp/latest'
+export IPP_TARGET_ARCH='intel64'
+export I_MPI_ROOT='/opt/intel/oneapi/mpi/latest'
+export LD_LIBRARY_PATH='/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/debugger/latest/gdb/intel64/lib:/opt/intel/oneapi/debugger/latest/libipt/intel64/lib:/opt/intel/oneapi/debugger/latest/dep/lib:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/lib:/opt/intel/oneapi/compiler/latest/linux/lib/x64:/opt/intel/oneapi/compiler/latest/linux/lib/emu:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin'
+export LIBRARY_PATH='/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ippcp/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/latest/linux/lib'
+export MANPATH='/opt/intel/oneapi/mpi/latest/man:/opt/intel/oneapi/debugger/latest/documentation/man:/opt/intel/oneapi/compiler/latest/documentation/en/man/common'
+export MKLROOT='/opt/intel/oneapi/mkl/latest'
+export NLSPATH='/opt/intel/oneapi/mkl/latest/lib/intel64/locale/%l_%t/%N'
+export OCL_ICD_FILENAMES='libintelocl_emu.so:libalteracl.so:/opt/intel/oneapi/compiler/latest/linux/lib/x64/libintelocl.so'
+export ONEAPI_ROOT='/opt/intel/oneapi'
+export PATH='/opt/intel/oneapi/mpi/latest//libfabric/bin:/opt/intel/oneapi/mpi/latest//bin:/opt/intel/oneapi/mkl/latest/bin/intel64:/opt/intel/oneapi/intelpython/latest/bin:/opt/intel/oneapi/intelpython/latest/condabin:/opt/intel/oneapi/inspector/latest/bin64:/opt/intel/oneapi/dev-utilities/latest/bin:/opt/intel/oneapi/debugger/latest/gdb/intel64/bin:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/llvm/aocl-bin:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/bin:/opt/intel/oneapi/compiler/latest/linux/bin/intel64:/opt/intel/oneapi/compiler/latest/linux/bin:/opt/intel/oneapi/clck/latest/bin/intel64:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+export PKG_CONFIG_PATH='/opt/intel/oneapi/tbb/latest/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/latest/lib/pkgconfig:/opt/intel/oneapi/mkl/latest/lib/pkgconfig:/opt/intel/oneapi/dal/latest/lib/pkgconfig:/opt/intel/oneapi/compiler/latest/lib/pkgconfig'
+export PYTHONPATH='/opt/intel/oneapi/advisor/latest/pythonapi'
+export SETVARS_COMPLETED='1'
+export SETVARS_VARS_PATH='/opt/intel/oneapi/vtune/latest/env/vars.sh'
+export TBBROOT='/opt/intel/oneapi/tbb/latest/env/..'
+export _CE_CONDA=''
+export _CE_M=''
+
+%runscript
+exec /bin/bash "$@"
+
+
