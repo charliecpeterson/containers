@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+%help
+This is a GEMS 3.9.3 with base Ubuntu 20.04 setup
+The GEMS software is located at
+/opt/GEMS393
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+%post
+export DEBIAN_FRONTEND=noninteractive
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+export SINGULARITY_SHELL=/bin/bash
+export SHELL=/bin/bash
+apt-get update -y \
+&& apt-get install -y  ffmpeg libsm6 libxext6 pkg-config gcc g++ make wget
+rm -rf /var/lib/apt/lists/*
+
+cd /opt
+wget https://gems.web.psi.ch/GEMS3/downloads/reposit/linux/Gems3.9.3-65db334.18b094c-linux-x64-qt5.tar.gz
+tar -vxf Gems3.9.3-65db334.18b094c-linux-x64-qt5.tar.gz
+rm Gems3.9.3-65db334.18b094c-linux-x64-qt5.tar.gz
+cd GEMS393/
+
+%environment
+export PATH=/opt/GEMS393/gems3-app:/opt/GEMS393/bin:$PATH
+export LD_LIBRARY_PATH=/opt/GEMS393/lib:$LD_LIBRARY_PATH
+
+%runscript
+exec /bin/bash "$@"
+
+
