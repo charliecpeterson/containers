@@ -7,19 +7,19 @@
 FROM ubuntu:20.04
 ENV gcc_version=10.3.0
 ENV oneapi_version=2021.4.0
-RUN apt-get update  \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates make wget gnupg gcc g++ gcc-multilib curl gpg-agent 
 RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add -
 RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list 
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends intel-basekit-2021.4.0 intel-aikit-2021.4.0 intel-hpckit-2021.4.0 \
+RUN apt-get update && apt-get install -y --no-install-recommends intel-basekit-runtime-2021.4.0 intel-aikit-runtime-2021.4.0 intel-hpckit-runtime-2021.4.0 \
   && wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_version}/gcc-${gcc_version}.tar.gz \
   && tar -vxf gcc-${gcc_version}.tar.gz ; rm gcc-${gcc_version}.tar.gz \
   && cd gcc-${gcc_version} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
   && ./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran  \
   && make -j "$(nproc)" && make install \
   && cd .. ; rm -rf gcc-${gcc_version} \
+  && apt remove -y curl gpg-agent make wget gnupg \
   && rm -rf /var/lib/apt/lists/* 
 RUN set -ex; \
 	dpkg-divert --divert /usr/bin/gcc.orig --rename /usr/bin/gcc; \

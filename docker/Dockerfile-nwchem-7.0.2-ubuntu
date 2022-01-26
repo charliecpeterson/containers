@@ -36,8 +36,7 @@ RUN apt update ; apt-get install -y --no-install-recommends  openssl libssl-dev 
   && cp -r libraryps /apps/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
-#FROM charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2021.4 
-FROM ubuntu:20.04
-COPY --from=buildnwchem /apps/nwchem/bin /apps/nwchem/bin
+FROM charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2021.4 
+COPY --from=buildnwchem /apps/nwchem /apps/nwchem
 ENV PATH=/apps/nwchem/bin:$PATH
 
