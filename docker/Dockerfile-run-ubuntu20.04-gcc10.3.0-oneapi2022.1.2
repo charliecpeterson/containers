@@ -4,28 +4,63 @@
 # Created 1/2022
 # Updated 2/2022
 
+
 FROM ubuntu:20.04
-ENV gcc_version=10.3.0
-ENV oneapi_version=2021.4.0
-RUN apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+ENV gcc_VER=10.3.0
+ENV basekit_VER=2022.1.2-146
+ENV basekit_getting_started_VER=2022.1.2-146
+ENV oneapi_common_vars_VER=2022.0.0-59
+ENV oneapi_common_licensing_VER=2022.0.0-59
+ENV oneapi_onevpl_VER=2022.0.0-58
+ENV oneapi_dev_utilities_VER=2021.5.2-936
+ENV oneapi_dnnl_VER=2022.0.2-43
+ENV oneapi_runtime_ipp_VER=2021.5.2-544
+ENV oneapi_runtime_dal_VER=2021.5.3-832
+ENV oneapi_runtime_mkl_VER=2022.0.2-136
+ENV oneapi_runtime_tbb_VER=2021.5.1-738
+ENV oneapi_runtime_ccl_VER=2021.5.1-494
+ENV hpckit_VER=2022.1.2-117
+ENV hpckit_getting_started_VER=2022.1.2-117
+ENV oneapi_compiler_dpcpp_cpp_runtime_VER=2022.0.2-3658
+ENV oneapi_compiler_fortran_runtime_VER=2022.0.2-3658
+ENV oneapi_runtime_mpi_VER=2021.5.1-515
+ENV aikit_VER=2022.1.2-135
+ENV aikit_getting_started_VER=2022.1.2-135
+
+RUN apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates make wget gnupg gcc g++ gcc-multilib curl gpg-agent 
 RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add -
 RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list 
-RUN apt-get update && apt-get install -y --no-install-recommends intel-basekit-runtime-2021.4.0 intel-aikit-runtime-2021.4.0 intel-hpckit-runtime-2021.4.0 \
-  && wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_version}/gcc-${gcc_version}.tar.gz \
-  && tar -vxf gcc-${gcc_version}.tar.gz ; rm gcc-${gcc_version}.tar.gz \
-  && cd gcc-${gcc_version} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends \ 
+  intel-basekit-getting-started=${basekit_getting_started_VER} \
+  intel-oneapi-common-vars=${oneapi_common_vars_VER} \
+  intel-oneapi-common-licensing=${oneapi_common_licensing_VER} \
+  intel-oneapi-onevpl=${oneapi_onevpl_VER} \
+  intel-oneapi-dev-utilities=${oneapi_dev_utilities_VER} \
+  intel-oneapi-dnnl=${oneapi_dnnl_VER} \
+  intel-oneapi-runtime-ipp=${oneapi_runtime_ipp_VER} \
+  intel-oneapi-runtime-dal=${oneapi_runtime_dal_VER} \
+  intel-oneapi-runtime-mkl=${oneapi_runtime_mkl_VER} \
+  intel-oneapi-runtime-tbb=${oneapi_runtime_tbb_VER} \
+  intel-oneapi-runtime-ccl=${oneapi_runtime_ccl_VER} \
+  intel-hpckit-getting-started=${hpckit_getting_started_VER} \
+  intel-oneapi-compiler-dpcpp-cpp-runtime=${oneapi_compiler_dpcpp_cpp_runtime_VER} \
+  intel-oneapi-compiler-fortran-runtime=${oneapi_compiler_fortran_runtime_VER} \
+  intel-oneapi-runtime-mpi=${oneapi_runtime_mpi_VER} \
+  intel-aikit-getting-started=${aikit_getting_started_VER} \
+  && wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
+  && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
+  && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
   && ./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran  \
-  && make -j "$(nproc)" && make install \
-  && cd .. ; rm -rf gcc-${gcc_version} \
-  && apt remove -y curl gpg-agent make wget gnupg \
+  && make -j "$(nproc)" && make install-strip \
+  && cd .. ; rm -rf gcc-${gcc_VER} \
   && rm -rf /var/lib/apt/lists/* 
 RUN set -ex; \
 	dpkg-divert --divert /usr/bin/gcc.orig --rename /usr/bin/gcc; \
 	dpkg-divert --divert /usr/bin/g++.orig --rename /usr/bin/g++; \
 	dpkg-divert --divert /usr/bin/gfortran.orig --rename /usr/bin/gfortran
-
 
 ENV LANG=C.UTF-8
 ENV CCL_CONFIGURATION='cpu_gpu_dpcpp'
@@ -55,8 +90,8 @@ ENV IPPCP_TARGET_ARCH='intel64'
 ENV IPPROOT='/opt/intel/oneapi/ipp/latest'
 ENV IPP_TARGET_ARCH='intel64'
 ENV I_MPI_ROOT='/opt/intel/oneapi/mpi/latest'
-ENV LD_LIBRARY_PATH='/opt/apps/gcc/lib64:/opt/apps/gcc/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/debugger/latest/gdb/intel64/lib:/opt/intel/oneapi/debugger/latest/libipt/intel64/lib:/opt/intel/oneapi/debugger/latest/dep/lib:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/lib:/opt/intel/oneapi/compiler/latest/linux/lib/x64:/opt/intel/oneapi/compiler/latest/linux/lib/emu:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin'
-ENV LIBRARY_PATH='/opt/apps/gcc/lib64:/opt/apps/gcc/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ippcp/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/latest/linux/lib'
+ENV LD_LIBRARY_PATH='/opt/intel/oneapi/lib/intel64:/opt/intel/oneapi/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/debugger/latest/gdb/intel64/lib:/opt/intel/oneapi/debugger/latest/libipt/intel64/lib:/opt/intel/oneapi/debugger/latest/dep/lib:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/lib:/opt/intel/oneapi/compiler/latest/linux/lib/x64:/opt/intel/oneapi/compiler/latest/linux/lib/emu:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/lib/oclfpga/linux64/lib:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin'
+ENV LIBRARY_PATH='/opt/intel/oneapi/lib/intel64:/opt/intel/oneapi/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/mkl/latest/lib/intel64:/opt/intel/oneapi/ippcp/latest/lib/intel64:/opt/intel/oneapi/ipp/latest/lib/intel64:/opt/intel/oneapi/dal/latest/lib/intel64:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/latest/linux/lib'
 ENV MANPATH='/opt/intel/oneapi/mpi/latest/man:/opt/intel/oneapi/debugger/latest/documentation/man:/opt/intel/oneapi/compiler/latest/documentation/en/man/common'
 ENV MKLROOT='/opt/intel/oneapi/mkl/latest'
 ENV NLSPATH='/opt/intel/oneapi/mkl/latest/lib/intel64/locale/%l_%t/%N'

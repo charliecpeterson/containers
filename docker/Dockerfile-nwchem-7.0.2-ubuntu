@@ -1,12 +1,12 @@
 #
-FROM charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2021.4 as buildnwchem
-ENV ARMCI_NETWORK=MPI-PR 
-ENV NWCHEM_TOP=/apps/nwchem-7.0.2-release 
+FROM charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
+ENV ARMCI_NETWORK=MPI-SPAWN 
+ENV NWCHEM_TOP=/opt/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
 ENV NWCHEM_MODULES="all" 
-ENV BLASOPT=" -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl -static" 
-ENV LAPACK_LIB="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl -static" 
-ENV SCALAPACK_LIB=" -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lutil -lm -ldl -static"  
+ENV BLASOPT=" -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl" 
+ENV LAPACK_LIB="-lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl" 
+ENV SCALAPACK_LIB=" -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lutil -lm -ldl"  
 ENV BLAS_SIZE=8 
 ENV SCALAPACK_SIZE=8 
 ENV USE_64TO32=y 
@@ -18,25 +18,24 @@ ENV FC=ifort
 ENV CC=icc 
 ENV CXX=icpc
 RUN apt update ; apt-get install -y --no-install-recommends  openssl libssl-dev ssh wget make git curl wget  \
-  && mkdir -pv /apps \
-  && cd /apps ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
+  && cd /opt ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
   && cd $NWCHEM_TOP/src \
   &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
   && make FC=ifort CC=icc CXX=icpc \
-  && mkdir -pv /apps/nwchem/bin \
-  && mkdir -pv /apps/nwchem/data \
-  && cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /apps/nwchem/bin \
-  && cd /apps/nwchem/bin \
+  && mkdir -pv /opt/nwchem/bin \
+  && mkdir -pv /opt/nwchem/data \
+  && cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /opt/nwchem/bin \
+  && cd /opt/nwchem/bin \
   && chmod 755 nwchem \
   && cd $NWCHEM_TOP/src/basis \
-  && cp -r libraries /apps/nwchem/data \
+  && cp -r libraries /opt/nwchem/data \
   && cd $NWCHEM_TOP/src \
-  && cp -r data /apps/nwchem/ \
+  && cp -r data /opt/nwchem/ \
   && cd $NWCHEM_TOP/src/nwpw \
-  && cp -r libraryps /apps/nwchem/data \
+  && cp -r libraryps /opt/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
-FROM charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2021.4 
-COPY --from=buildnwchem /apps/nwchem /apps/nwchem
-ENV PATH=/apps/nwchem/bin:$PATH
+FROM charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+COPY --from=buildnwchem /opt/nwchem /opt/nwchem
+ENV PATH=/opt/nwchem/bin:$PATH
 
