@@ -1,0 +1,15 @@
+#
+FROM charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as buildgrasp
+RUN apt update ; apt-get install -y --no-install-recommends  openssl libssl-dev ssh wget make git curl wget  \
+  && cd /opt \
+  && git clone https://github.com/compas/grasp \
+  && cd grasp \
+  && git checkout 3a4cd91ce18ff0f5dbf2f7203aa2a0bc885bc01a \
+  && ./configure.sh ; cd build \
+  && make install
+
+
+FROM charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+COPY --from=buildgrasp /opt/grasp /opt/grasp
+ENV PATH=/opt/grasp/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/grasp/lib:$LD_LIBRARY_PATH
