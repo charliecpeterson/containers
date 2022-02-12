@@ -29,7 +29,7 @@ ENV aikit_getting_started_VER=2022.1.2-135
 
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates make wget gnupg gcc g++ gcc-multilib curl gpg-agent 
+    ca-certificates make wget gnupg gcc g++ g++-multilib gcc-multilib curl gpg-agent 
 RUN wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
   && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
   && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \

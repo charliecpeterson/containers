@@ -65,11 +65,11 @@ ENV oneapi_pytorch_VER=1.8.0-1291
 
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates make wget g++ gcc curl gpg-agent gnupg
+    ca-certificates make wget g++ gcc-multilib g++-multilib gcc curl gpg-agent gnupg
 RUN wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
   && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
   && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
-  && ./configure --enable-bootstrap --disable-multilib --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran   \
+  && ./configure --enable-bootstrap  --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran   \
   && make -j "$(nproc)" && make install \
   && cd .. ; rm -rf gcc-${gcc_VER}
 
