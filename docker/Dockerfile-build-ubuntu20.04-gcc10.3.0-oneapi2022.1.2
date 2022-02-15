@@ -55,14 +55,6 @@ ENV oneapi_compiler_fortran_VER=2022.0.2
 ENV oneapi_compiler_dpcpp_cpp_and_cpp_classic_VER=2022.0.2 
 ENV oneapi_mpi_devel_VER=2021.5.1
 
-ENV aikit_VER=2022.1.2-135
-ENV aikit_getting_started_VER=2022.1.2-135
-ENV oneapi_model_zoo_VER=2.5.0-63
-ENV oneapi_python_VER=2022.0.2-155
-ENV oneapi_neural_compressor_VER=1.7.0-616
-ENV oneapi_tensorflow_VER=2.6.0-128
-ENV oneapi_pytorch_VER=1.8.0-1291
-
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates make wget g++ gcc-multilib g++-multilib gcc curl gpg-agent gnupg
@@ -105,13 +97,6 @@ RUN apt-get update \
   intel-oneapi-compiler-fortran-${oneapi_compiler_fortran_VER} \
   intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-${oneapi_compiler_dpcpp_cpp_and_cpp_classic_VER} \
   intel-oneapi-mpi-devel-${oneapi_mpi_devel_VER} \
-  intel-aikit-getting-started=${aikit_getting_started_VER} \
-  intel-oneapi-model-zoo=${oneapi_model_zoo_VER} \
-  intel-oneapi-dev-utilities=${oneapi_dev_utilities_VER} \
-  intel-oneapi-python=${oneapi_python_VER} \
-  intel-oneapi-neural-compressor=${oneapi_neural_compressor_VER} \
-  intel-oneapi-tensorflow=${oneapi_tensorflow_VER} \
-  intel-oneapi-pytorch=${oneapi_pytorch_VER} \
   && rm -rf /var/lib/apt/lists/* 
 
 COPY --from=buildcmake /opt/cmake/ /opt/cmake/

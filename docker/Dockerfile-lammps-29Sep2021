@@ -1,0 +1,29 @@
+#
+FROM charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildlammps
+RUN apt update ; apt-get install -y --no-install-recommends  pkg-config zlib1g-dev openssl libssl-dev wget make git \
+  && wget https://github.com/lammps/lammps/archive/refs/tags/stable_29Sep2021_update2.tar.gz \
+  && tar -vxf stable_29Sep2021_update2.tar.gz ; rm stable_29Sep2021_update2.tar.gz \
+  && cd lammps-stable_29Sep2021_update2 ; mkdir build ; cd build \
+  && echo "set(ALL_PACKAGES EXTRA-PAIR ASPHERE BODY CLASS2 COLLOID COMPRESS CORESHELL DIPOLE \
+        GRANULAR KSPACE MANYBODY MC MISC MLIAP MOLECULE OPT PERI \
+        POEMS PYTHON QEQ REPLICA RIGID SHOCK SNAP SPIN SRD VORONOI \
+        USER-BOCS USER-CGDNA USER-CGSDK USER-COLVARS USER-DIFFRACTION \
+        USER-DPD USER-DRUDE USER-EFF USER-FEP USER-MEAMC USER-MESODPD \
+        USER-MISC USER-MOFFF USER-OMP USER-PHONON USER-REACTION \
+        USER-REAXC USER-SDPD USER-SPH USER-SMD USER-UEF USER-YAFF) \n \
+     foreach(PKG \${ALL_PACKAGES}) \n \
+     set(PKG_\${PKG} ON CACHE BOOL \"\" FORCE) \n \
+     endforeach() " >> ../cmake/presets/intel.cmake  \
+  && cmake -C ../cmake/presets/intel.cmake -D BUILD_MPI=yes -D BUILD_OMP=yes -D LAMMPS_MACHINE=mpi -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc -DCMAKE_Fortran_COMPILER=ifort -DCMAKE_INSTALL_PREFIX=/opt/lammps ../cmake \
+  && make ; make install \
+  && cd ../.. ; rm -rf lammps-stable_29Sep2021_update2
+
+FROM charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+RUN apt update ; apt-get install -y --no-install-recommends  zlib1g curl 
+RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add -
+RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
+RUN apt update ; apt install -y --no-install-recommends intel-oneapi-python=2022.0.2-155 \
+    && rm -rf /var/lib/apt/lists/*  
+COPY --from=buildlammps /opt/lammps /opt/lammps
+ENV PATH=/opt/lammps/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/intelpython/latest/lib:$LD_LIBRARY_PATH

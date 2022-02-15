@@ -24,8 +24,6 @@ ENV hpckit_getting_started_VER=2022.1.2-117
 ENV oneapi_compiler_dpcpp_cpp_runtime_VER=2022.0.2-3658
 ENV oneapi_compiler_fortran_runtime_VER=2022.0.2-3658
 ENV oneapi_runtime_mpi_VER=2021.5.1-515
-ENV aikit_VER=2022.1.2-135
-ENV aikit_getting_started_VER=2022.1.2-135
 
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -56,7 +54,6 @@ RUN apt-get update \
   intel-oneapi-compiler-dpcpp-cpp-runtime=${oneapi_compiler_dpcpp_cpp_runtime_VER} \
   intel-oneapi-compiler-fortran-runtime=${oneapi_compiler_fortran_runtime_VER} \
   intel-oneapi-runtime-mpi=${oneapi_runtime_mpi_VER} \
-  intel-aikit-getting-started=${aikit_getting_started_VER} \
   && rm -rf /var/lib/apt/lists/* 
 
 ENV TBBROOT=/opt/intel/oneapi/tbb/2021.5.1/env/..
