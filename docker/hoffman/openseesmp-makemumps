@@ -1,0 +1,37 @@
+SCOTCHDIR  = /apps/scotch
+ISCOTCH    = -I$(SCOTCHDIR)/include
+LSCOTCH    = -L$(SCOTCHDIR)/lib -lptesmumps -lptscotch -lptscotcherr -lscotch 
+LPORDDIR = /tmp/MUMPS_5.0.2/PORD/lib/
+IPORD    = -I/tmp/MUMPS_5.0.2/PORD/include/
+LPORD    = -L$(LPORDDIR) -lpord
+LMETISDIR = /apps/metis
+IMETIS    = -I$(LMETISDIR)/include
+LPARMETISDIR = /apps/parmetis
+IPARMETIS    = -I$(LPARMETISDIR)/include
+LMETIS    = -L$(LMETISDIR)/lib -lmetis
+LPARMETIS = -L$(LPARMETISDIR)/lib -lparmetis
+ORDERINGSF = -Dscotch -Dmetis -Dpord -Dptscotch -Dparmetis 
+ORDERINGSC  = $(ORDERINGSF) 
+LORDERINGS = $(LPARMETIS) $(LMETIS) $(LPORD) $(LSCOTCH) 
+IORDERINGSF = $(ISCOTCH) 
+IORDERINGSC = $(IPARMETIS) $(IMETIS) $(IPORD) $(ISCOTCH) 
+PLAT    = 
+LIBEXT  = .a 
+OUTC    = -o 
+OUTF    = -o 
+RM = /bin/rm -f 
+CC = mpiicc 
+FC = mpiifort 
+FL = mpiifort 
+AR = ar vr  
+RANLIB  = echo 
+LIBPAR =  $(MKLROOT)/lib/intel64/libmkl_blas95_ilp64.a $(MKLROOT)/lib/intel64/libmkl_lapack95_ilp64.a \
+          -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core \
+          -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl 
+CDEFS   = -DAdd_ 
+OPTF    = -O -no-multibyte-chars -DALLOW_NON_INIT -nofor_main -qopenmp  
+OPTL    = -O -no-multibyte-chars -nofor_main -qopenmp 
+OPTC    = -O -no-multibyte-chars -qopenmp 
+INCS = $(INCPAR) 
+LIBS = $(LIBPAR) 
+LIBSEQNEEDED = 

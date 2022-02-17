@@ -1,0 +1,168 @@
+# Base GCC/Oneapi building container image
+# Ubuntu 20.04
+# Charles Peterson <charliecpeterson@gmail.com>
+# Created 1/2022
+# Updated 2/2022
+
+#Bulding Cmake
+FROM ubuntu:20.04 as buildcmake
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl  \
+    && rm -rf /var/lib/apt/lists/*
+RUN cd /opt  \
+    && curl -LO https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.sh \
+    && mkdir -p /opt/cmake  \
+    && /bin/bash cmake-3.20.2-linux-x86_64.sh --prefix=/opt/cmake --skip-license
+RUN rm -rf /opt/cmake/include \
+    && rm -rf /opt/cmake/lib/pkgconfig \
+    && find /opt -name "*.a" -exec rm -f {} \; || echo ""
+RUN rm -rf /opt/cmake/share/doc
+RUN rm -rf /opt/cmake/share/man
+RUN rm -rf /opt/cmake/man
+
+FROM ubuntu:20.04
+ENV gcc_VER=8.5.0
+ENV basekit_VER=2022.1.2-146
+ENV basekit_getting_started_VER=2022.1.2-146
+ENV oneapi_common_vars_VER=2022.0.0-59
+ENV oneapi_common_licensing_VER=2022.0.0-59
+ENV oneapi_advisor_VER=2022.0.0-92
+ENV oneapi_libdpstd_devel_VER=2021.6.0-501
+ENV oneapi_vtune_VER=2022.0.0-94
+ENV oneapi_dpcpp_ct_VER=2022.0.0-96
+ENV oneapi_dpcpp_debugger_VER=2021.5.0-109
+ENV oneapi_diagnostics_utility_VER=2022.0.0-58
+ENV oneapi_onevpl_devel_VER=2022.0.0-58
+ENV oneapi_dev_utilities_VER=2021.5.2-936
+ENV oneapi_compiler_dpcpp_cpp_VER=2022.0.2-3658
+ENV oneapi_ipp_devel_VER=2021.5.2-544
+ENV oneapi_dal_devel_VER=2021.5.3-832
+ENV oneapi_dnnl_devel_VER=2022.0.2-43
+ENV oneapi_mkl_devel_VER=2022.0.2-136
+ENV oneapi_python_VER=2022.0.2-155
+ENV oneapi_tbb_devel_VER=2021.5.1-738
+ENV oneapi_ccl_devel_VER=2021.5.1-494
+ENV oneapi_ippcp_devel_VER=2021.5.1-462
+
+ENV hpckit_VER=2022.1.2-117
+ENV hpckit_getting_started_VER=2022.1.2-117
+ENV oneapi_inspector_VER=2022.0.0-56
+ENV oneapi_clck_VER=2021.5.0
+ENV oneapi_itac_VER=2021.5.0
+ENV oneapi_diagnostics_utility_VER=2022.0.0-58
+ENV oneapi_compiler_fortran_VER=2022.0.2 
+ENV oneapi_compiler_dpcpp_cpp_and_cpp_classic_VER=2022.0.2 
+ENV oneapi_mpi_devel_VER=2021.5.1
+
+ENV aikit_VER=2022.1.2-135
+ENV aikit_getting_started_VER=2022.1.2-135
+ENV oneapi_model_zoo_VER=2.5.0-63
+ENV oneapi_python_VER=2022.0.2-155
+ENV oneapi_neural_compressor_VER=1.7.0-616
+ENV oneapi_tensorflow_VER=2.6.0-128
+ENV oneapi_pytorch_VER=1.8.0-1291
+
+RUN apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates make wget g++ gcc gcc-multilib g++-multilib curl gpg-agent gnupg
+RUN wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
+  && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
+  && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
+  && ./configure --enable-bootstrap  --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran   \
+  && make -j "$(nproc)" && make install \
+  && cd .. ; rm -rf gcc-${gcc_VER}
+
+RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add -
+RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
+
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends \
+  intel-basekit-getting-started=${basekit_getting_started_VER} \
+  intel-oneapi-common-vars=${oneapi_common_licensing_VER} \
+  intel-oneapi-common-licensing=${oneapi_common_licensing_VER} \
+  intel-oneapi-advisor=${oneapi_advisor_VER} \
+  intel-oneapi-libdpstd-devel=${oneapi_libdpstd_devel_VER} \
+  intel-oneapi-vtune=${oneapi_vtune_VER} \
+  intel-oneapi-dpcpp-ct=${oneapi_dpcpp_ct_VER} \
+  intel-oneapi-dpcpp-debugger=${oneapi_dpcpp_debugger_VER} \
+  intel-oneapi-diagnostics-utility=${oneapi_diagnostics_utility_VER} \
+  intel-oneapi-onevpl-devel=${oneapi_onevpl_devel_VER} \
+  intel-oneapi-compiler-dpcpp-cpp=${oneapi_compiler_dpcpp_cpp_VER} \
+  intel-oneapi-ipp-devel=${oneapi_ipp_devel_VER} \
+  intel-oneapi-dal-devel=${oneapi_dal_devel_VER} \
+  intel-oneapi-dnnl-devel=${oneapi_dnnl_devel_VER} \
+  intel-oneapi-mkl-devel=${oneapi_mkl_devel_VER} \
+  intel-oneapi-python=${oneapi_python_VER} \
+  intel-oneapi-tbb-devel=${oneapi_tbb_devel_VER} \
+  intel-oneapi-ccl-devel=${oneapi_ccl_devel_VER} \
+  intel-oneapi-ippcp-devel=${oneapi_ippcp_devel_VER} \
+  intel-hpckit-getting-started=${hpckit_getting_started_VER} \
+  intel-oneapi-inspector=${oneapi_inspector_VER} \
+  intel-oneapi-clck-${oneapi_clck_VER} \
+  intel-oneapi-itac-${oneapi_itac_VER} \
+  intel-oneapi-diagnostics-utility=${oneapi_diagnostics_utility_VER} \
+  intel-oneapi-compiler-fortran-${oneapi_compiler_fortran_VER} \
+  intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-${oneapi_compiler_dpcpp_cpp_and_cpp_classic_VER} \
+  intel-oneapi-mpi-devel-${oneapi_mpi_devel_VER} \
+  intel-aikit-getting-started=${aikit_getting_started_VER} \
+  intel-oneapi-model-zoo=${oneapi_model_zoo_VER} \
+  intel-oneapi-dev-utilities=${oneapi_dev_utilities_VER} \
+  intel-oneapi-python=${oneapi_python_VER} \
+  intel-oneapi-neural-compressor=${oneapi_neural_compressor_VER} \
+  intel-oneapi-tensorflow=${oneapi_tensorflow_VER} \
+  intel-oneapi-pytorch=${oneapi_pytorch_VER} \
+  && rm -rf /var/lib/apt/lists/* 
+
+COPY --from=buildcmake /opt/cmake/ /opt/cmake/
+
+ENV TBBROOT=/opt/intel/oneapi/tbb/2021.5.1/env/..
+ENV CLCK_ROOT=/opt/intel/oneapi/clck/2021.5.0
+ENV DAALROOT=/opt/intel/oneapi/dal/2021.5.3
+ENV DPCT_BUNDLE_ROOT=/opt/intel/oneapi/dpcpp-ct/2022.0.0
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV PKG_CONFIG_PATH=/opt/intel/oneapi/vtune/2022.0.0/include/pkgconfig/lib64:/opt/intel/oneapi/vpl/2022.0.0/lib/pkgconfig:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/2021.5.1/lib/pkgconfig:/opt/intel/oneapi/mkl/2022.0.2/lib/pkgconfig:/opt/intel/oneapi/ippcp/2021.5.1/lib/pkgconfig:/opt/intel/oneapi/inspector/2022.0.0/include/pkgconfig/lib64:/opt/intel/oneapi/dpl/2021.6.0/lib/pkgconfig:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/../lib/pkgconfig:/opt/intel/oneapi/dal/2021.5.3/lib/pkgconfig:/opt/intel/oneapi/compiler/2022.0.2/lib/pkgconfig:/opt/intel/oneapi/ccl/2021.5.1/lib/pkgconfig:/opt/intel/oneapi/advisor/2022.0.0/include/pkgconfig/lib64:
+ENV VT_MPI=impi4
+ENV ACL_BOARD_VENDOR_PATH=/opt/Intel/OpenCLFPGA/oneAPI/Boards
+ENV FPGA_VARS_DIR=/opt/intel/oneapi/compiler/2022.0.2/linux/lib/oclfpga
+ENV CCL_ROOT=/opt/intel/oneapi/ccl/2021.5.1
+ENV VT_ADD_LIBS="-ldwarf -lelf -lvtunwind -lm -lpthread"
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/2021.5.1
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib/prov:/usr/lib64/libfabric
+ENV DNNLROOT=/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp
+ENV CCL_CONFIGURATION=cpu_gpu_dpcpp
+ENV DPL_ROOT=/opt/intel/oneapi/dpl/2021.6.0
+ENV MANPATH=/opt/intel/oneapi/mpi/2021.5.1/man:/opt/intel/oneapi/itac/2021.5.0/man:/opt/intel/oneapi/debugger/2021.5.0/documentation/man:/opt/intel/oneapi/compiler/2022.0.2/documentation/en/man/common:/opt/intel/oneapi/clck/2021.5.0/man::
+ENV INSPECTOR_2022_DIR=/opt/intel/oneapi/inspector/2022.0.0
+ENV GDB_INFO=/opt/intel/oneapi/debugger/2021.5.0/documentation/info/
+ENV ADVISOR_2022_DIR=/opt/intel/oneapi/advisor/2022.0.0
+ENV APM=/opt/intel/oneapi/advisor/2022.0.0/perfmodels
+ENV CMAKE_PREFIX_PATH=/opt/intel/oneapi/vpl/2022.0.0:/opt/intel/oneapi/tbb/2021.5.1/env/..:/opt/intel/oneapi/dal/2021.5.3:/opt/intel/oneapi/compiler/2022.0.2/linux/IntelDPCPP
+ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/2022.0.2
+ENV FPGA_VARS_ARGS=
+ENV INFOPATH=/opt/intel/oneapi/debugger/2021.5.0/gdb/intel64/lib
+ENV IPPROOT=/opt/intel/oneapi/ipp/2021.5.2
+ENV IPP_TARGET_ARCH=intel64
+ENV PYTHONPATH=/opt/intel/oneapi/advisor/2022.0.0/pythonapi
+ENV CPLUS_INCLUDE_PATH=/opt/intel/oneapi/clck/2021.5.0/include
+ENV VT_ROOT=/opt/intel/oneapi/itac/2021.5.0
+ENV DALROOT=/opt/intel/oneapi/dal/2021.5.3
+ENV LIBRARY_PATH=/opt/intel/oneapi/vpl/2022.0.0/lib:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/mkl/2022.0.2/lib/intel64:/opt/intel/oneapi/ippcp/2021.5.1/lib/intel64:/opt/intel/oneapi/ipp/2021.5.2/lib/intel64:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/dal/2021.5.3/lib/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/clck/2021.5.0/lib/intel64:/opt/intel/oneapi/ccl/2021.5.1/lib/cpu_gpu_dpcpp
+ENV DAL_MAJOR_BINARY=1
+ENV IPPCRYPTOROOT=/opt/intel/oneapi/ippcp/2021.5.1
+ENV IPPCP_TARGET_ARCH=intel64
+ENV SHLVL=1
+ENV OCL_ICD_FILENAMES=libintelocl_emu.so:libalteracl.so:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64/libintelocl.so
+ENV CLASSPATH=/opt/intel/oneapi/mpi/2021.5.1//lib/mpi.jar:/opt/intel/oneapi/dal/2021.5.3/lib/onedal.jar
+ENV INTELFPGAOCLSDKROOT=/opt/intel/oneapi/compiler/2022.0.2/linux/lib/oclfpga
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/vpl/2022.0.0/lib:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/mkl/2022.0.2/lib/intel64:/opt/intel/oneapi/itac/2021.5.0/slib:/opt/intel/oneapi/ippcp/2021.5.1/lib/intel64:/opt/intel/oneapi/ipp/2021.5.2/lib/intel64:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/debugger/2021.5.0/gdb/intel64/lib:/opt/intel/oneapi/debugger/2021.5.0/libipt/intel64/lib:/opt/intel/oneapi/debugger/2021.5.0/dep/lib:/opt/intel/oneapi/dal/2021.5.3/lib/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/ccl/2021.5.1/lib/cpu_gpu_dpcpp
+ENV VT_LIB_DIR=/opt/intel/oneapi/itac/2021.5.0/lib
+ENV VT_SLIB_DIR=/opt/intel/oneapi/itac/2021.5.0/slib
+ENV MKLROOT=/opt/intel/oneapi/mkl/2022.0.2
+ENV DAL_MINOR_BINARY=1
+ENV MODEL_ZOO_VERSION=2.5.0
+ENV NLSPATH=/opt/intel/oneapi/mkl/2022.0.2/lib/intel64/locale/%l_%t/%N:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin/locale/%l_%t/%N
+ENV PATH=/opt/intel/oneapi/vtune/2022.0.0/bin64:/opt/intel/oneapi/vpl/2022.0.0/bin:/opt/intel/oneapi/mpi/2021.5.1//libfabric/bin:/opt/intel/oneapi/mpi/2021.5.1//bin:/opt/intel/oneapi/mkl/2022.0.2/bin/intel64:/opt/intel/oneapi/itac/2021.5.0/bin:/opt/intel/oneapi/intelpython/latest/bin:/opt/intel/oneapi/intelpython/latest/condabin:/opt/intel/oneapi/inspector/2022.0.0/bin64:/opt/intel/oneapi/dpcpp-ct/2022.0.0/bin:/opt/intel/oneapi/dev-utilities/2021.5.2/bin:/opt/intel/oneapi/debugger/2021.5.0/gdb/intel64/bin:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/oclfpga/bin:/opt/intel/oneapi/compiler/2022.0.2/linux/bin/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/bin:/opt/intel/oneapi/clck/2021.5.0/bin/intel64:/opt/intel/oneapi/advisor/2022.0.0/bin64:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV INTEL_LICENSE_FILE=/opt/intel/licenses:/root/intel/licenses:/opt/intel/oneapi/clck/2021.5.0/licensing:/opt/intel/licenses
+ENV CPATH=/opt/intel/oneapi/vpl/2022.0.0/include:/opt/intel/oneapi/tbb/2021.5.1/env/../include:/opt/intel/oneapi/mpi/2021.5.1//include:/opt/intel/oneapi/mkl/2022.0.2/include:/opt/intel/oneapi/ippcp/2021.5.1/include:/opt/intel/oneapi/ipp/2021.5.2/include:/opt/intel/oneapi/dpl/2021.6.0/linux/include:/opt/intel/oneapi/dpcpp-ct/2022.0.0/include:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/dev-utilities/2021.5.2/include:/opt/intel/oneapi/dal/2021.5.3/include:/opt/intel/oneapi/ccl/2021.5.1/include/cpu_gpu_dpcpp
+ENV VTUNE_PROFILER_2022_DIR=/opt/intel/oneapi/vtune/2022.0.0

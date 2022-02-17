@@ -1,0 +1,36 @@
+#
+FROM oarcrtg/h2-build:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
+RUN apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    liblzma-dev libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev \
+    && wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz \
+    && tar -vxf Python-3.9.10.tgz ; rm Python-3.9.10.tgz  \
+    && cd Python-3.9.10 ; ./configure --enable-shared --prefix=/apps/python \
+    && make ; make install \
+    && cd ../ ; rm -r Python-3.9.10
+ENV LD_LIBRARY_PATH=/apps/python/lib:$LD_LIBRARY_PATH
+ENV PATH=/apps/python/bin:$PATH
+RUN apt update ; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends  pkg-config zlib1g-dev openssl libssl-dev wget make git \
+  && wget https://github.com/lammps/lammps/archive/refs/tags/stable_29Sep2021_update2.tar.gz \
+  && tar -vxf stable_29Sep2021_update2.tar.gz ; rm stable_29Sep2021_update2.tar.gz \
+  && cd lammps-stable_29Sep2021_update2 ; mkdir build ; cd build \
+  && echo "set(ALL_PACKAGES EXTRA-PAIR ASPHERE BODY CLASS2 COLLOID COMPRESS CORESHELL DIPOLE \
+        GRANULAR KSPACE MANYBODY MC MISC MLIAP MOLECULE OPT PERI \
+        POEMS PYTHON QEQ REPLICA RIGID SHOCK SNAP SPIN SRD VORONOI \
+        USER-BOCS USER-CGDNA USER-CGSDK USER-COLVARS USER-DIFFRACTION \
+        USER-DPD USER-DRUDE USER-EFF USER-FEP USER-MEAMC USER-MESODPD \
+        USER-MISC USER-MOFFF USER-OMP USER-PHONON USER-REACTION \
+        USER-REAXC USER-SDPD USER-SPH USER-SMD USER-UEF USER-YAFF) \n \
+     foreach(PKG \${ALL_PACKAGES}) \n \
+     set(PKG_\${PKG} ON CACHE BOOL \"\" FORCE) \n \
+     endforeach() " >> ../cmake/presets/intel.cmake  \
+  && cmake -C ../cmake/presets/intel.cmake -D BUILD_MPI=yes -D BUILD_OMP=yes -D LAMMPS_MACHINE=mpi -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc -DCMAKE_Fortran_COMPILER=ifort -DCMAKE_INSTALL_PREFIX=/apps/lammps ../cmake \
+  && make ; make install \
+  && cd ../.. ; rm -rf lammps-stable_29Sep2021_update2
+
+FROM oarcrtg/h2-run:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+RUN apt update ; apt-get install -y --no-install-recommends libpng16-16 zlib1g  \
+    && rm -rf /var/lib/apt/lists/*  
+COPY --from=build /apps/ /apps/
+ENV LD_LIBRARY_PATH=/apps/python/lib:/apps/lammps/lib:$LD_LIBRARY_PATH
+ENV PATH=/apps/python/bin:/apps/lammps/bin:$PATH

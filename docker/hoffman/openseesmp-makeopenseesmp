@@ -1,0 +1,106 @@
+HOME  = /tmp
+BASE  =
+FE    = $(HOME)/OpenSees/SRC
+PROGRAMMING_MODE = PARALLEL_INTERPRETERS
+OpenSees_PROGRAM = $(HOME)/OpenSees/bin/OpenSeesMP
+OPERATING_SYSTEM = LINUX
+DEBUG_MODE = NO_DEBUG
+RELIABILITY = NO_RELIABILITY
+GRAPHICS = NONE
+AMDdir       = $(HOME)/OpenSees/OTHER/AMD
+BLASdir      = $(HOME)/OpenSees/OTHER/BLAS
+CBLASdir     = $(HOME)/OpenSees/OTHER/CBLAS
+LAPACKdir    = $(HOME)/OpenSees/OTHER/LAPACK
+SUPERLUdir   = $(HOME)/OpenSees/OTHER/SuperLU_5.1.1/SRC
+SUPERLU_DISTdir   = $(HOME)/OpenSees/OTHER/SuperLU_DIST_4.3/SRC
+ARPACKdir    = $(HOME)/OpenSees/OTHER/ARPACK
+UMFPACKdir   = $(HOME)/OpenSees/OTHER/UMFPACK
+METISdir     = $(HOME)/OpenSees/OTHER/METIS
+CSPARSEdir   = $(HOME)/OpenSees/OTHER/CSPARSE
+SRCdir       = $(HOME)/OpenSees/SRC
+DIRS        = $(BLASdir) $(CBLASdir) $(LAPACKdir) $(AMDdir) $(CSPARSEdir) $(SUPERLUdir) $(ARPACKdir) $(UMFPACKdir) $(SRCdir) $(METISdir) $(SUPERLU_DISTdir)
+FE_LIBRARY          = $(HOME)/OpenSees/lib/libOpenSees.a
+NDARRAY_LIBRARY     = $(HOME)/OpenSees/lib/libndarray.a
+MATMOD_LIBRARY      = $(HOME)/OpenSees/lib/libmatmod.a
+BJMISC_LIBRARY      = $(HOME)/OpenSees/lib/libBJmisc.a
+LAPACK_LIBRARY      = $(HOME)/OpenSees/lib/libLapack.a
+BLAS_LIBRARY        = $(HOME)/OpenSees/lib/libBlas.a
+SUPERLU_LIBRARY     = $(HOME)/OpenSees/lib/libSuperLU.a
+AMD_LIBRARY         = $(HOME)/OpenSees/lib/libAMD.a
+CBLAS_LIBRARY       = $(HOME)/OpenSees/lib/libCBlas.a
+ARPACK_LIBRARY      = $(HOME)/OpenSees/lib/libArpack.a
+UMFPACK_LIBRARY     = $(HOME)/OpenSees/lib/libUmfpack.a
+METIS_LIBRARY       = $(HOME)/OpenSees/lib/libMetis.a
+CSPARSE_LIBRARY     = $(HOME)/OpenSees/lib/libCSparse.a
+DISTRIBUTED_SUPERLU_LIBRARY     = $(HOME)/OpenSees/lib/libDistributedSuperLU.a
+TCL_LIBRARY = -ltcl8.6
+TCL_INCLUDES =
+GRAPHIC_LIBRARY     =
+RELIABILITY_LIBRARY =
+WIPE_LIBS       = $(FE_LIBRARY) $(NDARRAY_LIBRARY) $(MATMOD_LIBRARY) $(SUPERLU_LIBRARY) $(ARPACK_LIBRARY) $(AMD_LIBRARY) $(UMFPACK_LIBRARY) $(METIS_LIBRARY) $(LAPACK_LIBRARY) $(BLAS_LIBRARY) $(CBLAS_LIBRARY) $(DISTRIBUTED_SUPERLU_LIBRARY)
+MPI_DIR = $(MPI_HOME)
+MPI_BIN = $(MPI_DIR)/bin
+CC++            =  mpiicpc
+CC              =  mpiicc
+FC              =  mpiifort
+F90             =  $(FC)
+FORTRAN         =  $(FC)
+LINKER          =  $(CC++)
+AR                      = ar
+ARCH            = ar
+ARFLAGS     = -q
+ARCHFLAGS   = -v -q
+RANLIB          = ranlib
+RANLIBFLAGS =
+GRAPHIC_FLAG = -D_NOGRAPHICS
+PROGRAMMING_FLAG = -D_PARALLEL_INTERPRETERS
+C++FLAGS         =  -D_LINUX -D_UNIX  $(GRAPHIC_FLAG) $(RELIABILITY_FLAG) $(DEBUG_FLAG) $(OPT_FLAG) $(COMP_FLAG) $(PROGRAMMING_FLAG)  $(PETSC_FLAG) $(MUMPS_FLAG) -D_TCL85 -D_BLAS -O3 -ffloat-store -qopenmp -std=gnu99
+CFLAGS          =  $(GRAPHIC_FLAG) $(RELIABILITY_FLAG) $(DEBUG_FLAG)$(PROGRAMMING_FLAG) $(OPT_FLAG) $(COMP_FLAG) -D_TCL85 -D_BLAS -O2 -qopenmp -std=gnu99
+FFLAGS          =   $(OPT_FLAG) $(COMP_FLAG) -O
+LINKER          = $(CC++)
+LINKFLAGS       = -Wl,--allow-multiple-definition
+MAKE            = make
+CD              = cd
+ECHO            = echo
+RM              = rm
+RMFLAGS         = -f
+SHELL           = /bin/sh
+.SUFFIXES:
+.SUFFIXES:      .C .c .f .f90 .cpp .o .cpp
+.DEFAULT:
+	@$(ECHO) "Unknown target $@, try:  make help"
+.cpp.o:
+	@$(ECHO) Making $@ from $<
+	$(CC++) $(C++FLAGS) $(INCLUDES) -c $< -o $@
+
+.C.o:
+	@$(ECHO) Making $@ from $<
+	$(CC++) $(C++FLAGS) $(INCLUDES) -c $< -o $@
+.c.o:
+	@$(ECHO) Making $@ from $<
+	$(CC) $(CFLAGS) -c $< -o $@
+.f.o:
+	@$(ECHO) Making \$@ from $<
+	$(FC) $(FFLAGS) -c $< -o $@
+MACHINE_LINKLIBS  = -L$(BASE)/lib -L$(HOME)/lib
+HAVEPETSC = NO
+PETSCINC =
+PETSC_LIB =
+HAVEMUMPS = YES
+MUMPS = YES
+MUMPS_FLAG = -D_MUMPS
+MUMPS_DIR = /apps/mumps
+SCOTCHDIR  = /apps/scotch
+METISDIR = /apps/metis
+PARMETISDIR = /apps/parmetis
+MUMPS_INCLUDE = /apps/mumps/include
+PLAT    = LINUX
+MUMPS_LIB = -L$(MUMPS_DIR)/lib $(FE)/system_of_eqn/linearSOE/mumps/MumpsSOE.o $(FE)/system_of_eqn/linearSOE/mumps/MumpsSolver.o $(FE)/system_of_eqn/linearSOE/mumps/MumpsParallelSOE.o $(FE)/system_of_eqn/linearSOE/mumps/MumpsParallelSolver.o -ldmumps -lmumps_common -lpord -L$(SCOTCHDIR)/lib/ -lptesmumps -lptscotch -lptscotcherr -lscotch -L$(PARMETISDIR)/lib -lparmetis -L$(METISDIR)/lib -lmetis
+PARALLEL_LIB = -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl
+MACHINE_NUMERICAL_LIBS  = $(ARPACK_LIBRARY) $(SUPERLU_LIBRARY) $(UMFPACK_LIBRARY) $(AMD_LIBRARY) $(GRAPHIC_LIBRARY) $(RELIABILITY_LIBRARY) $(DISTRIBUTED_SUPERLU_LIBRARY) $(CSPARSE_LIBRARY) $(PETSC_LIB) $(MUMPS_LIB) $(CBLAS_LIBRARY) $(METIS_LIBRARY)
+
+MACHINE_SPECIFIC_LIBS =  $(PARALLEL_LIB) -lifcore -qopenmp
+MACHINE_INCLUDES = -I/usr/include -I$(MKLROOT)/include -I$(HOME)/include   -I$(UMFPACKdir) -I$(SUPERLUdir) -I$(SUPERLU_DISTdir) -I$(MUMPS_INCLUDE)
+include $(FE)/Makefile.incl
+TCL_INCLUDES = -I/usr/include/tcl
+INCLUDES =  $(TCL_INCLUDES) $(FE_INCLUDES) $(MACHINE_INCLUDES)
