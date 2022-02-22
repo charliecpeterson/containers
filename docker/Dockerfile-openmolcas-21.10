@@ -1,47 +1,46 @@
 #  
-FROM charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as buildmolcas
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu21.04-gcc8.5.0-oneapi2022.1.2 as build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
-ENV PATH=/opt/python/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/boost/lib:/opt/ga/lib:/opt/python/lib:$LD_LIBRARY_PATH
-ENV BOOST_ROOT=/opt/boost
+ENV PATH=/apps/python/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/boost/lib:/apps/ga/lib:/apps/python/lib:$LD_LIBRARY_PATH
+ENV BOOST_ROOT=/apps/boost
 
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    liblzma-dev libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
+    wget liblzma-dev  libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev
 
-RUN wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz \
-    && tar -vxf Python-3.9.10.tgz ; rm Python-3.9.10.tgz  \
-    && cd Python-3.9.10 ; ./configure --prefix=/opt/python \ 
+RUN cd /tmp ; curl -SL  https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz | tar xzf - \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python \ 
     && make ; make install \
-    && cd ../ ; rm -r Python-3.9.10 \
+    && cd /tmp ; rm -r Python-3.9.10 \
     && pip3 install pyparsing
 
-RUN apt-get install -y --no-install-recommends libhdf5-dev libgsl-dev git ssh curl   \
-  && cd /opt ; curl -SL https://github.com/GlobalArrays/ga/releases/download/v5.8.1/ga-5.8.1.tar.gz | tar xzf - \
-  &&  cd ga-5.8.1/ ; ./autogen.sh ; FC=ifort CC=icc CXX=icpc MPIF77=mpiifort MPICC=mpiicc MPICXX=mpiiicpc ./configure --enable-i8 --enable-shared --with-lapack=-mkl  --with-scalapack8 --with-blas8  --prefix=/opt/ga \
+RUN apt-get install -y --no-install-recommends libhdf5-dev libgsl-dev git ssh curl  gcc-multilib \
+  && cd /tmp ; curl -SL https://github.com/GlobalArrays/ga/releases/download/v5.8.1/ga-5.8.1.tar.gz | tar xzf - \
+  &&  cd ga-5.8.1/ ; ./autogen.sh ; FC=ifort CC=icc CXX=icpc MPIF77=mpiifort MPICC=mpiicc MPICXX=mpiiicpc ./configure --enable-i8 --enable-shared --with-lapack=-mkl  --with-scalapack8 --with-blas8  --prefix=/apps/ga \
   && make ; make install \
-  && cd /opt ; rm -rf ga-5.8.1
+  && cd /tmp ; rm -rf ga-5.8.1
 
-RUN cd /opt ; curl -SL https://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz/download | tar xzf - \
+RUN cd /tmp ; curl -SL https://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz/download | tar xzf - \
   && cd boost_1_56_0 \
-  && ./bootstrap.sh --prefix=/opt/boost \
+  && ./bootstrap.sh  --with-libraries=program_options,filesystem,system,serialization,thread --prefix=/apps/boost \
   && ./b2 install \
-  && cd /opt ; rm -rf boost_1_56_0
+  && cd /tmp ; rm -rf boost_1_56_0
 
-RUN cd /opt ;curl -SL  https://gitlab.com/Molcas/OpenMolcas/-/archive/v21.10/OpenMolcas-v21.10.tar.gz  | tar xzf - \
+RUN cd /tmp ;curl -SL  https://gitlab.com/Molcas/OpenMolcas/-/archive/v21.10/OpenMolcas-v21.10.tar.gz  | tar xzf - \
   && cd OpenMolcas-v21.10/  \
   && mkdir -p build ; cd build \
-  && GAROOT=/apps/ga FC=mpiifort CC=mpiicc CXX=mpiicpc cmake -DGA=ON -DLINALG=MKL -DOPENMP=ON -DCMAKE_INSTALL_PREFIX=/opt/openmolcas -DDMRG=ON  -DNEVPT2=ON ../ \
+  && GAROOT=/apps/ga FC=mpiifort CC=mpiicc CXX=mpiicpc cmake -DGA=ON -DLINALG=MKL -DOPENMP=ON -DCMAKE_INSTALL_PREFIX=/apps/openmolcas -DDMRG=ON  -DNEVPT2=ON ../ \
   && make ; make install  \
-  && cd /opt ; rm -rf OpenMolcas-v21.10
+  && cd /tmp ; rm -rf OpenMolcas-v21.10
 
-FROM charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+FROM ghcr.io/charliecpeterson/baserun:ubuntu21.04-gcc8.5.0-oneapi2022.1.2
 RUN apt-get update  \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libhd5f-dev \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libhdf5-dev \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=buildmolcas /opt/ /opt/
-ENV PATH=/opt/openmolcas/bin:/opt/openmolcas:$PATH
-ENV PATH=/opt/python/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/openmolcas/lib:/opt/boost/lib:/opt/ga/lib:/opt/python/lib:$LD_LIBRARY_PATH
+COPY --from=build /apps/ /apps/
+ENV PATH=/apps/openmolcas/bin:/apps/openmolcas:$PATH
+ENV PATH=/apps/python/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/openmolcas/lib:/apps/boost/lib:/apps/ga/lib:/apps/python/lib:$LD_LIBRARY_PATH
 

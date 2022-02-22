@@ -1,5 +1,5 @@
 #
-FROM oarcrtg/h2-build:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
+FROM oarcrtg/h2-build:ubuntu21.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
 ENV ARMCI_NETWORK=MPI-SPAWN 
 ENV NWCHEM_TOP=/opt/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
@@ -35,7 +35,7 @@ RUN apt update ; apt-get install -y --no-install-recommends   gcc-multilib  open
   && cp -r libraryps /opt/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
-FROM oarcrtg/h2-run:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+FROM oarcrtg/h2-run:ubuntu21.04-gcc10.3.0-oneapi2022.1.2
 COPY --from=buildnwchem /opt/nwchem /opt/nwchem
 ENV PATH=/opt/nwchem/bin:$PATH
 

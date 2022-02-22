@@ -1,31 +1,38 @@
 #  
-FROM charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu21.04-gcc10.3.0-oneapi2022.1.2 as build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
-ENV LD_LIBRARY_PATH=/opt/boost/lib:$LD_LIBRARY_PATH
-ENV BOOST_ROOT=/opt/boost
+ENV PATH=/apps/python/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/python/lib:/apps/boost/lib:$LD_LIBRARY_PATH
+ENV BOOST_ROOT=/apps/boost
 
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    libhd5f-dev
+    curl ca-certificates make gcc-multilib libhdf5-dev libxml2-dev libssl-dev libsqlite3-dev libffi-dev
 
-RUN cd /opt ; curl -SL https://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz/download | tar xzf - \
-  && cd boost_1_56_0 \
-  && ./bootstrap.sh --prefix=/opt/boost \
+RUN cd /tmp ; curl -SL  https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz | tar xzf - \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python \
+    && make ; make install \
+    && cd /tmp ; rm -r Python-3.9.10 \
+    && pip3 install h5py
+
+RUN cd /tmp ; curl -SL https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz | tar xzf - \
+  && cd boost_1_77_0 \
+  && ./bootstrap.sh --prefix=/apps/boost \
   && ./b2 install \
-  && cd /opt ; rm -rf boost_1_56_0
+  && cd /tmp ; rm -rf boost_1_77_0
 
-RUN cd /opt ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.12.0.tar.gz  | tar xzf - \
-  && cd v3.12.0/build \
-  && cmake -DCMAKE_C_COMPILER=mpiicc -DCMAKE_CXX_COMPILER=mpiicpc -DCMAKE_INSTALL_PREFIX=/opt/qmcpack .. \
+RUN cd /tmp ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.13.0.tar.gz  | tar xzf - \
+  && cd qmcpack-3.13.0/build \
+  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=/apps/qmcpack .. \
   && make ; make install  \
-  && cd /opt ; rm -rf v3.12.0
+  && cd /tmp ; rm -rf qmcpack-3.13.0
 
-FROM charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+FROM ghcr.io/charliecpeterson/baserun:ubuntu21.04-gcc10.3.0-oneapi2022.1.2
 RUN apt-get update  \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libhd5f-dev \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libhdf5-dev \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build /opt/ /opt/
-ENV PATH=/opt/qmcpack/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/boost/lib:$LD_LIBRARY_PATH
+COPY --from=build /apps/qmcpack/ /apps/qmcpack/
+ENV PATH=/apps/qmcpack/bin:/apps/qmcpack/bin/:/apps/python/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/boost/lib:/apps/python/lib:$LD_LIBRARY_PATH
 

@@ -4,62 +4,62 @@
 # Created 1/2022
 # Updated 2/2022
 
-
 FROM ubuntu:20.04
 ENV gcc_VER=8.5.0
 ENV basekit_VER=2022.1.2-146
-ENV basekit_getting_started_VER=2022.1.2-146
 ENV oneapi_common_vars_VER=2022.0.0-59
 ENV oneapi_common_licensing_VER=2022.0.0-59
-ENV oneapi_onevpl_VER=2022.0.0-58
-ENV oneapi_dev_utilities_VER=2021.5.2-936
-ENV oneapi_dnnl_VER=2022.0.2-43
-ENV oneapi_runtime_ipp_VER=2021.5.2-544
-ENV oneapi_runtime_dal_VER=2021.5.3-832
 ENV oneapi_runtime_mkl_VER=2022.0.2-136
-ENV oneapi_runtime_tbb_VER=2021.5.1-738
-ENV oneapi_runtime_ccl_VER=2021.5.1-494
 ENV hpckit_VER=2022.1.2-117
-ENV hpckit_getting_started_VER=2022.1.2-117
 ENV oneapi_compiler_dpcpp_cpp_runtime_VER=2022.0.2-3658
 ENV oneapi_compiler_fortran_runtime_VER=2022.0.2-3658
 ENV oneapi_runtime_mpi_VER=2021.5.1-515
 
 RUN apt-get update  \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates make wget gnupg gcc g++ g++-multilib gcc-multilib curl gpg-agent 
-RUN wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
-  && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
-  && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
-  && ./configure --enable-bootstrap --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran  \
-  && make -j "$(nproc)" && make install \
-  && cd .. ; rm -rf gcc-${gcc_VER} 
-
-RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add -
-RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list 
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libc6 gnupg \
+    && savedAptMark="$(apt-mark showmanual)" \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends bzip2 ca-certificates make wget g++ gcc curl gpg-agent gnupg \
+    && libffi-dev libgdbm-dev libsqlite3-dev libssl-dev zlib1g-dev \
+    && curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add - \
+    && echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list \
+    && apt update \
+    && cd /tmp ; wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
+    && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
+    && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
+    && mkdir build ; cd build \
+    && ../configure --disable-multilib --enable-bootstrap  --enable-shared --enable-threads=posix  --enable-languages=c,c++,fortran  \
+    && make -j "$(nproc)" && make install \
+    && cd /tmp ; rm -rf gcc-${gcc_VER} \
+    && apt-mark auto '.*' > /dev/null;  apt-mark manual $savedAptMark; apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false 
 RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends \ 
-  intel-basekit-getting-started=${basekit_getting_started_VER} \
-  intel-oneapi-common-vars=${oneapi_common_vars_VER} \
-  intel-oneapi-common-licensing=${oneapi_common_licensing_VER} \
-  intel-oneapi-onevpl=${oneapi_onevpl_VER} \
-  intel-oneapi-dev-utilities=${oneapi_dev_utilities_VER} \
-  intel-oneapi-dnnl=${oneapi_dnnl_VER} \
-  intel-oneapi-runtime-ipp=${oneapi_runtime_ipp_VER} \
-  intel-oneapi-runtime-dal=${oneapi_runtime_dal_VER} \
-  intel-oneapi-runtime-mkl=${oneapi_runtime_mkl_VER} \
-  intel-oneapi-runtime-tbb=${oneapi_runtime_tbb_VER} \
-  intel-oneapi-runtime-ccl=${oneapi_runtime_ccl_VER} \
-  intel-hpckit-getting-started=${hpckit_getting_started_VER} \
-  intel-oneapi-compiler-dpcpp-cpp-runtime=${oneapi_compiler_dpcpp_cpp_runtime_VER} \
-  intel-oneapi-compiler-fortran-runtime=${oneapi_compiler_fortran_runtime_VER} \
-  intel-oneapi-runtime-mpi=${oneapi_runtime_mpi_VER} \
-  && rm -rf /var/lib/apt/lists/*
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl  ca-certificates gnupg gpg-agent \
+    && curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | apt-key add - \
+    && echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    intel-oneapi-common-vars=${oneapi_common_vars_VER} \
+    intel-oneapi-common-licensing=${oneapi_common_licensing_VER} \
+    intel-oneapi-runtime-mkl=${oneapi_runtime_mkl_VER} \
+    intel-oneapi-compiler-dpcpp-cpp-runtime=${oneapi_compiler_dpcpp_cpp_runtime_VER} \
+    intel-oneapi-compiler-fortran-runtime=${oneapi_compiler_fortran_runtime_VER} \
+    intel-oneapi-runtime-mpi=${oneapi_runtime_mpi_VER} \
+    && rm -rf /var/lib/apt/lists/* 
 
-ENV CPATH=/opt/intel/oneapi/tbb/2021.5.1/env/../include:/opt/intel/oneapi/mpi/2021.5.1//include:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/dev-utilities/2021.5.2/include
-ENV PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/bin:/opt/intel/oneapi/mpi/2021.5.1//bin:/opt/intel/oneapi/dev-utilities/2021.5.2/bin:/opt/intel/oneapi/compiler/2022.0.2/linux/bin/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ENV LD_LIBRARY_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
-ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/2022.0.2/linux/lib
-ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib/prov:/usr/lib64/libfabric
+ENV TBBROOT=/opt/intel/oneapi/tbb/2021.5.1/env/..
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV PKG_CONFIG_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/2021.5.1/lib/pkgconfig:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/../lib/pkgconfig:/opt/intel/oneapi/compiler/2022.0.2/lib/pkgconfig
 ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/2021.5.1
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib/prov:/usr/lib64/libfabric
+ENV DNNLROOT=/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp
+ENV MANPATH=/opt/intel/oneapi/mpi/2021.5.1/man:/opt/intel/oneapi/compiler/2022.0.2/documentation/en/man/common::
+ENV CMAKE_PREFIX_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/..:/opt/intel/oneapi/compiler/2022.0.2/linux/IntelDPCPP
+ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/2022.0.2
+ENV LIBRARY_PATH=/usr/local/lib64:/opt/intel/oneapi/lib:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
+ENV SHLVL=1
+ENV OCL_ICD_FILENAMES=/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64/libintelocl.so
+ENV CLASSPATH=/opt/intel/oneapi/mpi/2021.5.1//lib/mpi.jar
+ENV LD_LIBRARY_PATH=/usr/local/lib64:/opt/intel/oneapi/lib:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
+ENV NLSPATH=/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin/locale/%l_%t/%N
+ENV PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/bin:/opt/intel/oneapi/mpi/2021.5.1//bin:/opt/intel/oneapi/dev-utilities/2021.5.2/bin:/opt/intel/oneapi/compiler/2022.0.2/linux/bin/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV CPATH=/opt/intel/oneapi/tbb/2021.5.1/env/../include:/opt/intel/oneapi/mpi/2021.5.1//include:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/dev-utilities/2021.5.2/include
 

@@ -4,8 +4,8 @@
 # Created 1/2022
 # Updated 2/2022
 
-FROM ubuntu:20.04
-ENV gcc_VER=10.3.0
+FROM ubuntu:21.04
+ENV gcc_VER=8.5.0
 ENV basekit_VER=2022.1.2-146
 ENV oneapi_common_vars_VER=2022.0.0-59
 ENV oneapi_common_licensing_VER=2022.0.0-59
@@ -54,11 +54,11 @@ ENV DNNLROOT=/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp
 ENV MANPATH=/opt/intel/oneapi/mpi/2021.5.1/man:/opt/intel/oneapi/compiler/2022.0.2/documentation/en/man/common::
 ENV CMAKE_PREFIX_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/..:/opt/intel/oneapi/compiler/2022.0.2/linux/IntelDPCPP
 ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/2022.0.2
-ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/2022.0.2/linux/lib
+ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
 ENV SHLVL=1
 ENV OCL_ICD_FILENAMES=/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64/libintelocl.so
 ENV CLASSPATH=/opt/intel/oneapi/mpi/2021.5.1//lib/mpi.jar
-ENV LD_LIBRARY_PATH=/usr/local/lib64:/opt/intel/oneapi/lib/:/opt/intel/oneapi/lib/intel64:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
 ENV NLSPATH=/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin/locale/%l_%t/%N
 ENV PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/bin:/opt/intel/oneapi/mpi/2021.5.1//bin:/opt/intel/oneapi/dev-utilities/2021.5.2/bin:/opt/intel/oneapi/compiler/2022.0.2/linux/bin/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ENV CPATH=/opt/intel/oneapi/tbb/2021.5.1/env/../include:/opt/intel/oneapi/mpi/2021.5.1//include:/opt/intel/oneapi/dnnl/2022.0.2/cpu_dpcpp_gpu_dpcpp/lib:/opt/intel/oneapi/dev-utilities/2021.5.2/include

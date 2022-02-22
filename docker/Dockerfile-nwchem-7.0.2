@@ -1,5 +1,5 @@
 #
-FROM charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
 ENV ARMCI_NETWORK=MPI-SPAWN 
 ENV NWCHEM_TOP=/opt/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
@@ -17,7 +17,7 @@ ENV USE_MPIF4=y
 ENV FC=ifort 
 ENV CC=icc 
 ENV CXX=icpc
-RUN apt update ; apt-get install -y --no-install-recommends   gcc-multilib  openssl libssl-dev ssh wget make git curl wget  \
+RUN apt update ; apt-get install -y --no-install-recommends  gcc-multilib openssl libssl-dev ssh wget make git curl wget  \
   && cd /opt ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
   && cd $NWCHEM_TOP/src \
   &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
@@ -35,7 +35,7 @@ RUN apt update ; apt-get install -y --no-install-recommends   gcc-multilib  open
   && cp -r libraryps /opt/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
-FROM charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
 COPY --from=buildnwchem /opt/nwchem /opt/nwchem
 ENV PATH=/opt/nwchem/bin:$PATH
 
