@@ -17,7 +17,7 @@ ENV USE_MPIF4=y
 ENV FC=ifort 
 ENV CC=icc 
 ENV CXX=icpc
-RUN apt update ; apt-get install -y --no-install-recommends  gcc-multilib openssl libssl-dev ssh wget make git curl wget  \
+RUN apt update ; apt-get install -y --no-install-recommends  gcc-multilib  openssl libssl-dev ssh wget make git curl wget  \
   && cd /opt ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
   && cd $NWCHEM_TOP/src \
   &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \

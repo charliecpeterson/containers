@@ -1,5 +1,9 @@
+# Dockerfile for NWCHEM build for Hoffman2
+# Using GCC 10.3.0 and Intel compiler, MKL and IntelMPI
+# Charles Peterson <cpeterson@oarc.ucla.edu>
+# Created 2/24/2022
 #
-FROM oarcrtg/h2-build:ubuntu21.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
+FROM oarcrtg/h2-build:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
 ENV ARMCI_NETWORK=MPI-SPAWN 
 ENV NWCHEM_TOP=/opt/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
@@ -20,7 +24,6 @@ ENV CXX=icpc
 RUN apt update ; apt-get install -y --no-install-recommends   gcc-multilib  openssl libssl-dev ssh wget make git curl wget  \
   && cd /opt ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
   && cd $NWCHEM_TOP/src \
-  &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
   && make FC=ifort CC=icc CXX=icpc \
   && mkdir -pv /opt/nwchem/bin \
   && mkdir -pv /opt/nwchem/data \
@@ -35,7 +38,7 @@ RUN apt update ; apt-get install -y --no-install-recommends   gcc-multilib  open
   && cp -r libraryps /opt/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
-FROM oarcrtg/h2-run:ubuntu21.04-gcc10.3.0-oneapi2022.1.2
+FROM oarcrtg/h2-run:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
 COPY --from=buildnwchem /opt/nwchem /opt/nwchem
 ENV PATH=/opt/nwchem/bin:$PATH
 

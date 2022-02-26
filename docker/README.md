@@ -1,53 +1,23 @@
 # Dockerfiles
 
-## Base Build
+## personal
 
-These images have the basic compilers, libraries, MPI, etc needed to build applications
+This directory has the Dockerfiles that I (Charlie) use. 
 
-### Dockerfile-build-ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+All these images are build and stored on GitHub packages
 
-dockerhub docker://charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+ghcr.io/charliecpeterson
 
-- GCC: 8.5.0
-- OneAPI: 2022.12
+## hoffman2
 
-### Dockerfile-build-ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+These are Dockerfiles for images built for UCLA's Hoffman2 HPC resource
 
-dockerhub docker://charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+All these images are located at OARC RTG's docker hub 
 
-- GCC: 10.3.0
-- OneAPI: 2022.12
+https://hub.docker.com/orgs/oarcrtg
 
-## Base Run
 
-This images have the basic GCC compilers with runtime Intel OneAPI libraries
+## Note
 
-### Dockerfile-run-ubuntu20.04-gcc8.5.0-oneapi2022.1.2
-
-dockerhub docker://charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
-
-- GCC: 8.5.0
-- OneAPI: 2022.12
-
-### Dockerfile-run-ubuntu20.04-gcc10.3.0-oneapi2022.1.2
-
-dockerhub docker://charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
-
-- GCC: 10.3.0
-- OneAPI: 2022.12
-
-## NWChem
-
-These images have NWChem 
-
-### Dockerfile-nwchem-7.0.2-ubuntu
-
-built on dockerhub docker://charliecpeterson/nwchem:7.0.2
-
-## GRASP
-
-### Dockerfile-grasp2018
-
-build on dockerhub docker://charliecpeterson/grasp:grasp2018
-
+All images with Intel's OneAPI are set to private. 
 

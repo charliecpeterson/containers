@@ -6,9 +6,10 @@
 
 FROM ubuntu:20.04
 
+
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates make wget pkg-config libgtk2.0-dev  build-essential  software-properties-common \
+    time make wget pkg-config libgtk2.0-dev  build-essential  software-properties-common \
     git liblzma-dev libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
 
 RUN wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz \

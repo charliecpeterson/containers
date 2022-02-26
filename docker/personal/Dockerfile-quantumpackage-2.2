@@ -16,8 +16,8 @@ RUN apt-get update  \
 
 RUN apt update ; DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends  software-properties-common libzmq3-dev libncurses5-dev pkg-config libgmp3-dev m4 bubblewrap libcap-dev ninja-build make curl wget  \
   && add-apt-repository ppa:avsm/ppa \ 
-  &&  apt update ; apt install  -y --no-install-recommends  opam \
-  && opam init --disable-sandboxing
+  &&  apt update ; DEBIAN_FRONTEND=noninteractive apt install  -y --no-install-recommends  opam \
+  && opam init --disable-sandboxing \
   && cd /tmp ;curl -SL  https://github.com/QuantumPackage/qp2/archive/refs/tags/2.1.2.tar.gz   | tar xzf - \
   && cd qp2-2.1.2 \
   && ./configure --install=irpf90 \

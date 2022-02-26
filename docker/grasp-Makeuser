@@ -1,9 +1,0 @@
-export FC=ifort
-export FC_FLAGS="-O3 -save -mkl=sequential"
-export FC_MPILD="-mkl=sequential"
-export FC_MPI=mpiifort
-export OMPI_FC=ifort
-export FC_LD="-mkl=sequential"
-export CC=icc
-export CXX=icpc
-export GRASP="/apps/grasp"

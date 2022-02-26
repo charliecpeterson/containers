@@ -1,0 +1,69 @@
+# Base GCC/OpenBLAS/OpenMPI building container image
+# Ubuntu 20.04
+# Charles Peterson <cpeterson@oarc.ucla.edu>
+# Create 2/24/2022
+
+#Bulding Cmake
+FROM ubuntu:20.04 as buildcmake
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl  \
+    && rm -rf /var/lib/apt/lists/*
+RUN cd /opt  \
+    && curl -LO https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.sh \
+    && mkdir -p /opt/cmake  \
+    && /bin/bash cmake-3.20.2-linux-x86_64.sh --prefix=/opt/cmake --skip-license
+RUN rm -rf /opt/cmake/include \
+    && rm -rf /opt/cmake/lib/pkgconfig \
+    && find /opt -name "*.a" -exec rm -f {} \; || echo ""
+RUN rm -rf /opt/cmake/share/doc
+RUN rm -rf /opt/cmake/share/man
+RUN rm -rf /opt/cmake/man
+
+FROM ubuntu:20.04
+ENV gcc_VER=10.3.0
+ENV OB_VER=0.3.20
+ENV OMPI_VER=4.1.2
+ENV LD_LIBRARY_PATH=/opt/gcc/lib:/opt/gcc/lib64:/opt/openmpi/lib:/opt/openblas/lib
+ENV PATH=/opt/cmake/bin:/opt/gcc/bin:/opt/openmpi/bin:$PATH
+
+RUN apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils libc6-dev ca-certificates libffi-dev gpg-agent dirmngr gnupg \
+    && savedAptMark="$(apt-mark showmanual)" \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends dpkg-dev bzip2 gcc g++ make wget curl flex \
+    && rm -rf /var/lib/apt/lists/* \
+    && cd /tmp ; wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_VER}/gcc-${gcc_VER}.tar.gz \
+    && tar -vxf gcc-${gcc_VER}.tar.gz ; rm gcc-${gcc_VER}.tar.gz \
+    && cd gcc-${gcc_VER} ; ./contrib/download_prerequisites;  rm *.tar.* || true \
+    && mkdir build ; cd build \
+    && ../configure --build=x86_64-linux-gnu --disable-multilib  --enable-languages=c,c++,fortran --prefix=/opt/gcc \
+    && make -j "$(nproc)" && make install-strip \
+    && cd /tmp ; rm -rf gcc-${gcc_VER} \
+    && apt-mark auto '.*' > /dev/null;  apt-mark manual $savedAptMark; apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false 
+
+RUN apt-get update \
+    && savedAptMark="$(apt-mark showmanual)" \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends dpkg-dev bzip2 make wget  \
+    && rm -rf /var/lib/apt/lists/* \
+    && cd /tmp ; wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-${OMPI_VER}.tar.gz \
+    && tar -vxf openmpi-${OMPI_VER}.tar.gz ; rm openmpi-${OMPI_VER}.tar.gz \
+    && cd openmpi-${OMPI_VER} ; ./configure  --with-sge --without-verbs --enable-mpi-cxx --enable-mpi-fortran --prefix=/opt/openmpi \
+    && make ; make install \
+    && cd /tmp ; rm -rf openmpi-${OMPI_VER} \
+    && apt-mark auto '.*' > /dev/null;  apt-mark manual $savedAptMark; apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+
+RUN apt-get update \
+    && savedAptMark="$(apt-mark showmanual)" \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends dpkg-dev bzip2 make wget  \
+    && rm -rf /var/lib/apt/lists/* \
+    && cd /tmp ; wget https://github.com/xianyi/OpenBLAS/releases/download/v${OB_VER}/OpenBLAS-${OB_VER}.tar.gz \
+    && tar -vxf OpenBLAS-${OB_VER}.tar.gz ; rm OpenBLAS-${OB_VER}.tar.gz \ 
+    && cd OpenBLAS-${OB_VER} \
+    && FC=gfortran CC=gcc CXX=g++ make ; make  install PREFIX=/opt/openblas \
+    && cd /tmp ; rm -rf OpenBLAS-${OB_VER} \ 
+    && apt-mark auto '.*' > /dev/null;  apt-mark manual $savedAptMark; apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+
+
+COPY --from=buildcmake /opt/cmake/ /opt/cmake/
+
+
