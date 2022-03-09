@@ -1,0 +1,31 @@
+# Base GCC/Oneapi building container image
+# With CUDA
+# Ubuntu 20.04
+# Charles Peterson <cpeterson@oarc.ucla.edu>
+# Created 2/2022
+
+
+FROM oarcrtg/h2-build:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
+RUN bupLD=$LD_LIBRARY_PATH ; unset LD_LIBRARY_PATH ; apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libxml2-dev ca-certificates curl  wget \
+    && LD_LIBRARY_PATH=$bupLD \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cd /tmp ; wget https://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda_10.2.89_440.33.01_linux.run \ 
+    && chmod +x cuda_10.2.89_440.33.01_linux.run \
+    && sh cuda_10.2.89_440.33.01_linux.run --silent --toolkit --installpath=/opt/cuda 
+
+FROM oarcrtg/h2-run:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 
+COPY --from=build /opt/cuda /opt/cuda
+RUN rm -rf /opt/cuda/doc
+RUN rm -rf /opt/cuda/bin
+RUN rm -rf /opt/cuda/extras
+
+ENV LD_LIBRARY_PATH=/opt/cuda/lib64:$LD_LIBRARY_PATH
+ENV CPATH=/opt/cuda/include:$CPATH
+ENV PATH=/opt/cuda/bin:$PATH
+ENV CUDA_DIR=/opt/cuda
+ENV CUDA_PATH=/opt/cuda
+ENV CUDA_ROOT=/opt/cuda
+

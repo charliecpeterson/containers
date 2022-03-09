@@ -60,10 +60,10 @@ RUN cd /tmp ; git clone https://github.com/OpenSees/OpenSees \
     && cp -r lib /apps/OpenSees \
     && cd /tmp ; rm -rf OpenSees* 
 #
-FROM oarcrtg/h2-run:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
-RUN apt update ; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zlib1g libtcl8.6 \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=build /apps/  /apps/
-ENV PATH=/apps/OpenSees/bin:/apps/python/bin:$PATH
-ENV LD_LIBRARY_PATH=/apps/OpenSees/lib:/apps/python/lib:$LD_LIBRARY_PATH
+#FROM oarcrtg/h2-run:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+#RUN apt update ; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zlib1g libtcl8.6 \
+#    && rm -rf /var/lib/apt/lists/*
+#COPY --from=build /apps/  /apps/
+#ENV PATH=/apps/OpenSees/bin:/apps/python/bin:$PATH
+#ENV LD_LIBRARY_PATH=/apps/OpenSees/lib:/apps/python/lib:$LD_LIBRARY_PATH
 

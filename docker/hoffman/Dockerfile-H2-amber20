@@ -1,0 +1,50 @@
+FROM oarcrtg/h2-build:ubuntu20.04-gcc8.5.0-oneapi2022.1.2-cuda10.2 as build
+COPY ./Amber20.tar.bz2 /Amber20.tar.bz2
+COPY ./AmberTools20.tar.bz2 /AmberTools20.tar.bz2
+
+RUN bupLD=$LD_LIBRARY_PATH ; unset LD_LIBRARY_PATH ; apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    make gcc-multilib tk-dev flex bison libbz2-dev zlib1g \
+    && export LD_LIBRARY_PATH=$bupLD
+
+RUN cd /tmp ; curl -SL https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz | tar xzf - \
+  && cd boost_1_77_0 \
+  && ./bootstrap.sh --prefix=/apps/boost \
+  && ./b2 install \
+  && cd /tmp ; rm -rf boost_1_77_0
+ENV LD_LIBRARY_PATH=/apps/boost/lib:$LD_LIBRARY_PATH
+ENV BOOST_ROOT=/apps/boost
+RUN mkdir /apps/ ; cd /tmp \
+    && mv /Amber20.tar.bz2 ./ ;  mv /AmberTools20.tar.bz2 ./ \
+    && tar -vxf Amber20.tar.bz2 ; tar -vxf AmberTools20.tar.bz2 \
+    && rm *bz2 ; cd amber20_src/build  \
+    && sed -i 's/DMPI=FALSE/DMPI=TRUE/g' run_cmake \ 
+    && sed -i 's/DCUDA=FALSE/DCUDA=TRUE/g' run_cmake \
+    && sed -i 's/DCMAKE_INSTALL_PREFIX=\$AMBER_PREFIX\/amber20/DCMAKE_INSTALL_PREFIX=\/apps\/amber20/g' run_cmake \ 
+    && ./run_cmake ; make install
+
+#
+FROM oarcrtg/h2-run:ubuntu20.04-gcc8.5.0-oneapi2022.1.2-cuda10.2
+COPY --from=build /apps /apps
+
+ENV TBBROOT=/opt/intel/oneapi/tbb/2021.5.1/env/..
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV PKG_CONFIG_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/2021.5.1/lib/pkgconfig:/opt/intel/oneapi/compiler/2022.0.2/lib/pkgconfig
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/2021.5.1
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib/prov:/usr/lib64/libfabric
+ENV MANPATH=/opt/intel/oneapi/mpi/2021.5.1/man:/opt/intel/oneapi/compiler/2022.0.2/documentation/en/man/common::
+ENV CUDA_DIR=/opt/cuda
+ENV CMAKE_PREFIX_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/..:/opt/intel/oneapi/compiler/2022.0.2/linux/IntelDPCPP
+ENV PERL5LIB=/apps/amber20/lib/perl
+ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/2022.0.2
+ENV PYTHONPATH=/apps/amber20/lib/python3.9/site-packages
+ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin:/opt/intel/oneapi/compiler/2022.0.2/linux/lib
+ENV CUDA_PATH=/opt/cuda
+ENV CUDA_ROOT=/opt/cuda
+ENV AMBERHOME=/apps/amber20
+ENV LD_LIBRARY_PATH=/apps/amber20/lib:/opt/cuda/lib64:/opt/gcc/lib:/opt/gcc/lib64:/opt/intel/oneapi/tbb/2021.5.1/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/2021.5.1//libfabric/lib:/opt/intel/oneapi/mpi/2021.5.1//lib/release:/opt/intel/oneapi/mpi/2021.5.1//lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib:/opt/intel/oneapi/compiler/2022.0.2/linux/lib/x64:/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin
+ENV NLSPATH=/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin/locale/%l_%t/%N
+ENV PATH=/apps/amber20/bin:/opt/cuda/bin:/opt/intel/oneapi/mpi/2021.5.1//libfabric/bin:/opt/intel/oneapi/mpi/2021.5.1//bin:/opt/intel/oneapi/compiler/2022.0.2/linux/bin/intel64:/opt/intel/oneapi/compiler/2022.0.2/linux/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV CPATH=/opt/cuda/include:/opt/intel/oneapi/tbb/2021.5.1/env/../include:/opt/intel/oneapi/mpi/2021.5.1//include
+
+
