@@ -1,5 +1,5 @@
 #
-FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as buildnwchem
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
 ENV ARMCI_NETWORK=MPI-SPAWN 
 ENV NWCHEM_TOP=/opt/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
@@ -22,20 +22,31 @@ RUN apt update ; apt-get install -y --no-install-recommends  gcc-multilib  opens
   && cd $NWCHEM_TOP/src \
   &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
   && make FC=ifort CC=icc CXX=icpc \
-  && mkdir -pv /opt/nwchem/bin \
-  && mkdir -pv /opt/nwchem/data \
-  && cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /opt/nwchem/bin \
-  && cd /opt/nwchem/bin \
+  && mkdir -pv /apps/nwchem/bin \
+  && mkdir -pv /apps/nwchem/data \
+  && cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /apps/nwchem/bin \
+  && cd /apps/nwchem/bin \
   && chmod 755 nwchem \
   && cd $NWCHEM_TOP/src/basis \
-  && cp -r libraries /opt/nwchem/data \
+  && cp -r libraries /apps/nwchem/data \
   && cd $NWCHEM_TOP/src \
-  && cp -r data /opt/nwchem/ \
+  && cp -r data /apps/nwchem/ \
   && cd $NWCHEM_TOP/src/nwpw \
-  && cp -r libraryps /opt/nwchem/data \
+  && cp -r libraryps /apps/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
 FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
-COPY --from=buildnwchem /opt/nwchem /opt/nwchem
-ENV PATH=/opt/nwchem/bin:$PATH
+COPY --from=build /apps/ /apps/
+ENV NWCHEM_DIR=/apps/nwchem
+ENV PATH=${NWCHEM_DIR}/bin:$PATH
+ENV NWCHEM_BASIS_LIBRARY=${NWCHEM_DIR}/data/libraries/
+ENV NWCHEM_NWPW_LIBRARY=${NWCHEM_DIR}/data/libraryps/
+ENV FFIELD=amber
+ENV AMBER_1=${NWCHEM_DIR}/data/amber_s/
+ENV AMBER_2=${NWCHEM_DIR}/data/amber_q/
+ENV AMBER_3=${NWCHEM_DIR}/data/amber_x/
+ENV AMBER_4=${NWCHEM_DIR}/data/amber_u/
+ENV SPCE=${NWCHEM_DIR}/data/solvents/spce.rst
+ENV CHARMM_S=${NWCHEM_DIR}/data/charmm_s/
+ENV CHARMM_X=${NWCHEM_DIR}/data/charmm_x/
 

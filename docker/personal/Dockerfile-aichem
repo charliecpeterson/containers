@@ -1,0 +1,9 @@
+#
+FROM nvcr.io/nvidia/tensorflow:22.02-tf2-py3
+RUN pip3 install pandas
+RUN pip3 install sklearn
+RUN pip3 install dscribe
+RUN pip3 install seaborn
+RUN pip3 install jupyterlab
+RUN pip3 install notebook
+

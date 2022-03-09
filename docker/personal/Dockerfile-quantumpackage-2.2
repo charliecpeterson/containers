@@ -1,32 +1,41 @@
 #
-FROM ghcr.io/charliecpeterson/basebuild:ubuntu21.04-gcc10.3.0-oneapi2022.1.2 as build
-ENV PATH=/apps/python/bin:$PATH
-ENV LD_LIBRARY_PATH=/apps/python/lib:$LD_LIBRARY_PATH
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
+
+ENV PATH=/apps/python3/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/ipp/2021.5.2/lib/intel64:/apps/python3/lib:$LD_LIBRARY_PATH
+ENV QP_ROOT=/apps/qp2
+ENV OPAMROOT=${QP_ROOT}/external/opam
+
 RUN apt-get update  \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     libffi-dev wget liblzma-dev  libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev \
     && cd /tmp ; wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz \
     && tar -vxf Python-3.9.10.tgz ; rm Python-3.9.10.tgz  \
-    && cd Python-3.9.10 ; ./configure --prefix=/apps/python \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python3 \
     && make ; make install \
-    && cd /tmp ; rm -r Python-3.9.10 \
-    &&  pip3 install irpf90 \
-    && pip3 install docopt \
-    && ln -s /apps/python/bin/python3 /apps/python/bin/python
+    && cd /tmp ; rm -r Python-3.9.10 \ 
+    && ln -s /apps/python3/bin/pip3 /apps/python3/bin/pip \
+    && ln -s /apps/python3/bin/python3 /apps/python3/bin/python \
+    && pip install irpf90 \
+    && pip install docopt \
+    && pip install resultsFile
 
-RUN apt update ; DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends  software-properties-common libzmq3-dev libncurses5-dev pkg-config libgmp3-dev m4 bubblewrap libcap-dev ninja-build make curl wget  \
-  && add-apt-repository ppa:avsm/ppa \ 
-  &&  apt update ; DEBIAN_FRONTEND=noninteractive apt install  -y --no-install-recommends  opam \
-  && opam init --disable-sandboxing \
-  && cd /tmp ;curl -SL  https://github.com/QuantumPackage/qp2/archive/refs/tags/2.1.2.tar.gz   | tar xzf - \
-  && cd qp2-2.1.2 \
-  && ./configure --install=irpf90 \
-  && ./configure --install=zeromq \
-  && ./configure --install=f77zmq \
-  && ./configure --install=ocaml \
-  && ./configure 
+RUN apt update ; DEBIAN_FRONTEND=noninteractive  apt-get install -y --no-install-recommends  \
+    rsync intel-oneapi-ipp-devel-2021.5.2 git unzip software-properties-common libzmq3-dev libncurses5-dev pkg-config libgmp3-dev m4 bubblewrap libcap-dev make curl wget  opam  \
+  && cd /apps ;git clone  https://github.com/QuantumPackage/qp2 ; cd qp2  \ 
+  && git checkout 512318a9ec1e13c9ccb2815afbc8325bf0999ea2 ; mkdir -p $OPAMROOT  \
+  && ./configure -i all  \
+  && sed -i 's/-lipps/-L\/opt\/intel\/oneapi\/ipp\/2021.5.2\/lib\/intel64 -lipps/g' config/ifort_mpi.cfg  \
+  && sed -i 's/-mkl/-qmkl/g' config/ifort_mpi.cfg \
+  && ./configure -c config/ifort_mpi.cfg \
+  && ./bin/qpsh \
+  && make
 
-FROM ghcr.io/charliecpeterson/baserun:ubuntu21.04-gcc10.3.0-oneapi2022.1.2
-COPY --from=build /apps/ /apps/
-ENV PATH=/opt/nwchem/bin:$PATH
+  
+
+
+
+#FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+#COPY --from=build /apps/ /apps/
+#ENV PATH=/opt/nwchem/bin:$PATH
 
