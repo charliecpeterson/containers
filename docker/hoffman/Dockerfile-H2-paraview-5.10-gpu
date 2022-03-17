@@ -1,0 +1,14 @@
+FROM ubuntu:20.04
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+     ca-certificates curl libglapi-mesa libgomp1 \
+     && rm -rf /var/lib/apt/lists/* 
+
+RUN mkdir -p /apps ; cd /apps \
+    && curl -SL "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.10&type=binary&os=Linux&downloadFile=ParaView-5.10.0-egl-MPI-Linux-Python3.9-x86_64.tar.gz" | tar xzf - \
+   && mv ParaView-5.10.0-egl-MPI-Linux-Python3.9-x86_64 paraview
+
+
+ENV PATH=/apps/paraview/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/paraview/lib
+
+
