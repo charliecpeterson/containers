@@ -6,4 +6,5 @@ RUN pip3 install dscribe
 RUN pip3 install seaborn
 RUN pip3 install jupyterlab
 RUN pip3 install notebook
+RUN pip3 install dask
 

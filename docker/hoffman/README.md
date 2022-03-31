@@ -54,22 +54,20 @@ These images have [NWChem](https://nwchemgit.github.io/)
 
 - Dockerfile-H2-lammps-29Sep2021
 
+You can customize you own build of LAMMPS by chaning the `lammps-cmake` file
+
 ## Opensees
 
 [OpenSees](https://opensees.berkeley.edu/)
 
 - Dockerfile-H2-openseesmp-3.3.0
 
-## hybpiper
-
-[hybpiper](https://github.com/mossmatters/HybPiper)
-
-- Dockerfile-H2-hybpiper-1.3.1
-
 ## Rstudio
 
 [Rstudio](https://www.rstudio.com/) server for Hoffman2
 
-- Dockerfile-H2-rstudio-4.1.0
+These rstudio images were built using [Rocker](https://www.rocker-project.org)
 
+- Dockerfile-H2-rstudio-4.1.0
+- Dockerfile-H2-rstudio-4.0.5
 
