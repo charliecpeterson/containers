@@ -3,7 +3,7 @@
 # # Charles Peterson <charliecpeterson@gmail.com>
 # # Created 2/2022
 FROM rocker/rstudio:4.1.0
-RUN apt update ; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pkg-config zlib1g-dev openssl libssl-dev wget make git vim less 
+RUN apt update ; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pkg-config zlib1g-dev openssl libssl-dev wget make git vim less libxt6
 
 RUN apt update \
     && DEBIAN_FRONTEND=noninteractive apt install -y \
