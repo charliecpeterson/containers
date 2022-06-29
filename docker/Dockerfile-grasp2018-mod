@@ -1,0 +1,29 @@
+#
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
+ENV FC=gfortran
+ENV FC_FLAGS="-O3 -save -mkl=sequential"
+ENV FC_MPILD="-mkl=sequential"
+ENV FC_MPI=mpif90
+ENV FC_LD="-mkl=sequential"
+ENV CC=gcc
+ENV CXX=g++
+ENV GRASP="/apps/grasp"
+
+RUN bupLD=$LD_LIBRARY_PATH ; unset LD_LIBRARY_PATH \
+  && apt update ; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends  gcc-multilib wget make git curl \
+  && LD_LIBRARY_PATH=$bupLD \
+  && mkdir -pv /apps ; cd /apps \ 
+  && git clone https://github.com/compas/grasp \
+  && cd grasp \
+  && git checkout 966fd6d154bd421033cf2cf56eb203d521a79e2e \
+  && sed -i 's/NNNP   = 590/NNNP   = 1000/g' src/lib/libmod/parameter_def_M.f90 \
+  && sed -i 's/NNN1   = 600/NNN1   = 1010/g' src/lib/libmod/parameter_def_M.f90 \
+  && mkdir -pv build ; cd build \
+  && cmake .. ; make ; make install
+
+
+FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+COPY --from=build /apps/grasp /apps/grasp
+ENV GRASP="/apps/grasp"
+ENV PATH=/apps/grasp/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/grasp/lib:$LD_LIBRARY_PATH

@@ -213,3 +213,8 @@ exec bash -c "source /opt/anaconda/etc/profile.d/conda.sh
 conda activate h2oai
 $@"
 
+%startscript
+exec bash -c "source /opt/anaconda/etc/profile.d/conda.sh
+conda activate h2oai
+$@"
+
