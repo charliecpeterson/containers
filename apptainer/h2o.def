@@ -9,7 +9,7 @@ Author Charles Peterson <charles.c.peterson3@gmail.com>
 %post
 export DEBIAN_FRONTEND=noninteractive
 apt -y update ; apt -y upgrade 
-apt install -y  libxml2-dev libbz2-dev wget git gcc  libreadline-dev zlib1g-dev
+apt install -y  libxml2-dev libbz2-dev wget git gcc  libreadline-dev zlib1g-dev default-jre default-jdk
 
 #Install anaconda
 cd /tmp

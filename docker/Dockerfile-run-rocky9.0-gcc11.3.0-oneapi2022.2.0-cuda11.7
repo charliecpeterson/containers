@@ -1,0 +1,27 @@
+# Base GCC/Oneapi building container image
+# Rocky 9.0
+# Charles Peterson <charliecpeterson@gmail.com>
+# Created 7/2022
+
+FROM ghcr.io/charliecpeterson/base:build-rocky9.0-gcc11.3.0-oneapi2022.2.0 as build
+
+RUN yum update -y \
+    && yum install -y which curl  wget \
+    && cd /tmp ; wget https://developer.download.nvidia.com/compute/cuda/11.7.0/local_installers/cuda_11.7.0_515.43.04_linux.run \
+    && chmod +x cuda_11.7.0_515.43.04_linux.run \
+    && sh cuda_11.7.0_515.43.04_linux.run --silent --toolkit --installpath=/opt/cuda
+
+FROM ghcr.io/charliecpeterson/base:run-rocky9.0-gcc11.3.0-oneapi2022.2.0 
+COPY --from=build /opt/cuda /opt/cuda
+
+RUN rm -rf /opt/cuda/doc
+RUN rm -rf /opt/cuda/bin
+RUN rm -rf /opt/cuda/extras
+
+ENV LD_LIBRARY_PATH=/opt/cuda/lib64:$LD_LIBRARY_PATH
+ENV CPATH=/opt/cuda/include:$CPATH
+ENV PATH=/opt/cuda/bin:$PATH
+ENV CUDA_DIR=/opt/cuda
+ENV CUDA_PATH=/opt/cuda
+ENV CUDA_ROOT=/opt/cuda
+
