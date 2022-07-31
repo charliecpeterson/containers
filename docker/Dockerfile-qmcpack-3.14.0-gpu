@@ -1,5 +1,5 @@
 #  
-FROM ghcr.io/charliecpeterson/base:build-rocky9.0-gcc11.3.0-oneapi2022.2.0 as build
+FROM ghcr.io/charliecpeterson/base:build-rocky9.0-gcc11.3.0-oneapi2022.2.0-cuda11.7 as build
 ENV PATH=/apps/hdf5/bin:$PATH
 ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/boost/lib:$LD_LIBRARY_PATH
 ENV BOOST_ROOT=/apps/boost
@@ -27,11 +27,11 @@ RUN cd /tmp ; curl -SL https://boostorg.jfrog.io/artifactory/main/release/1.77.0
 
 RUN cd /tmp ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.14.0.tar.gz  | tar xzf - \
   && cd qmcpack-3.14.0/build \
-  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx  -DCMAKE_INSTALL_PREFIX=/apps/qmcpack .. \
+  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DENABLE_CUDA=ON  -DCMAKE_INSTALL_PREFIX=/apps/qmcpack .. \
   && make ; make install  \
   && cd /tmp ; rm -rf qmcpack-3.14.0
 
-FROM ghcr.io/charliecpeterson/base:run-rocky9.0-gcc11.3.0-oneapi2022.2.0
+FROM ghcr.io/charliecpeterson/base:run-rocky9.0-gcc11.3.0-oneapi2022.2.0-cuda11.7
    
 COPY --from=build /apps/ /apps/
 
