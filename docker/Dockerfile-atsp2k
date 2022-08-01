@@ -1,0 +1,30 @@
+#
+FROM ghcr.io/charliecpeterson/base:build-ubuntu22.04-gcc11.3.0-oneapi2022.2.0 as build
+ENV FC=ifort
+ENV FC_FLAGS="-O3 -save -qmkl=sequential"
+ENV FC_MPILD="-qmkl=sequential"
+ENV FC_MPI=mpiifort
+ENV FC_LD="-qmkl=sequential"
+ENV CC=icc
+ENV CXX=icpc
+ENV ATSP="/apps/atsp2k"
+ENV FC_MALLOC=LINUX
+ENV LAPACK_LIB="-llapack -lblas" 
+
+RUN apt update -y \
+    && apt install -y --no-install-recommends wget make liblapack-dev libblas-dev \
+    && cd /tmp ; wget https://elsevier.digitalcommonsdata.com/public-files/datasets/yz5jgp2b94/files/514696d7-5899-4932-a874-c8e0fc8b7f74/file_downloaded \
+    && tar -vxf file_downloaded ; rm file_downloaded ; cd atsp2K_cpc \
+    && find  -type f -name "*.o" -delete \
+    && cd src ; mkdir -pv ${ATSP} ; make
+
+
+FROM ghcr.io/charliecpeterson/base:run-ubuntu22.04-gcc11.3.0-oneapi2022.2.0 
+
+RUN apt update -y \
+    && apt install -y --no-install-recommends wget make liblapack-dev libblas-dev 
+
+COPY --from=build /apps/atsp2k /apps/atsp2k
+ENV ATSP="/apps/atsp2k"
+ENV PATH=/apps/atsp2k/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/atsp2k/lib:$LD_LIBRARY_PATH
