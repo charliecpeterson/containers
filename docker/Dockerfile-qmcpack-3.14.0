@@ -27,7 +27,7 @@ RUN cd /tmp ; curl -SL https://boostorg.jfrog.io/artifactory/main/release/1.77.0
 
 RUN cd /tmp ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.14.0.tar.gz  | tar xzf - \
   && cd qmcpack-3.14.0/build \
-  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx  -DCMAKE_INSTALL_PREFIX=/apps/qmcpack .. \
+  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx  -DCMAKE_INSTALL_PREFIX=/apps/qmcpack -DQMC_COMPLEX=1 .. \
   && make ; make install  \
   && cd /tmp ; rm -rf qmcpack-3.14.0
 
