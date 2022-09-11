@@ -29,7 +29,12 @@ RUN cd /tmp ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.1
   && cd qmcpack-3.14.0/build \
   && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx  -DCMAKE_INSTALL_PREFIX=/apps/qmcpack -DQMC_COMPLEX=1 .. \
   && make ; make install  \
+  && mkdir -pv /apps/qmcpackpython/ \ 
+  && cd .. ; cp -r ./nexus/lib/* /apps/qmcpackpython \
+  && cp ./src/QMCTools/PyscfToQmcpack.py /apps/qmcpackpython \
   && cd /tmp ; rm -rf qmcpack-3.14.0
+
+
 
 FROM ghcr.io/charliecpeterson/base:run-rocky9.0-gcc11.3.0-oneapi2022.2.0
    
@@ -39,10 +44,12 @@ RUN yum update -y \
     && yum install -y \
     python3-devel libxml2 \
     && pip3 install h5py \
-    && pip3 install numpy
+    && pip3 install numpy \
+    && pip3 install version \
+    && pip3 install cif2cell \
+    && pip3 install pyscf==2.0.1
 
-RUN rm -rf  /apps/hdf5/bin ; rm -rf /apps/hdf5share \
-    rm -rf /apps/python/share
-
-ENV PATH=/apps/qmcpack/bin:/apps/python/bin:/apps/hdf5/bin:$PATH
-ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/python/lib:/apps/boost/lib:$LD_LIBRARY_PATH
+RUN rm -rf  /apps/hdf5/bin ; rm -rf /apps/hdf5share 
+ENV PYTHONPATH=/apps/qmcpackpython
+ENV PATH=/apps/qmcpack/bin:/apps/hdf5/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/qmcpackpython/lib:/apps/boost/lib:$LD_LIBRARY_PATH
