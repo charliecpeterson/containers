@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%help
+stress-ng container
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+apt update -y
+apt install -y stress-ng python3-pip python3-dev
+rm -rf /var/lib/apt/lists/*
+pip3 install s-tui
