@@ -1,0 +1,65 @@
+FROM docker.io/ubuntu:22.04 as build
+
+RUN apt-get update -y  \ 
+&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils libc6-dev gpg-agent wget gnupg curl  ca-certificates software-properties-common make gfortran cmake vim less 
+
+RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB | apt-key add -
+RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
+
+RUN apt-get update -y && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    curl ca-certificates gpg-agent software-properties-common && \
+  rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://repositories.intel.com/graphics/intel-graphics.key | apt-key add -
+RUN echo "deb [trusted=yes arch=amd64] https://repositories.intel.com/graphics/ubuntu jammy flex" > /etc/apt/sources.list.d/intel-graphics.list
+
+
+RUN apt-get update -y  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    intel-oneapi-compiler-dpcpp-cpp \
+    intel-oneapi-mkl-devel \
+    intel-oneapi-compiler-fortran \
+    intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic \
+    intel-oneapi-mpi-devel \
+    && rm -rf /var/lib/apt/lists/*  
+
+RUN bash -c "source /opt/intel/oneapi/setvars.sh  \
+    && cd /tmp ; wget https://netlib.org/benchmark/hpl/hpl-2.3.tar.gz  \
+    && tar -vxf hpl-2.3.tar.gz ; cd hpl-2.3 \
+    && cp setup/Make.Linux_Intel64 Make.Linux_Intel64 \
+    && sed -i 's/TOPdir       = \$(HOME)\/hpl/TOPdir       = \/tmp\/hpl-2.3/g' Make.Linux_Intel64 \
+    && sed -i 's/openmp/qopenmp/g' Make.Linux_Intel64 \
+    && make arch=Linux_Intel64 "
+
+RUN mkdir -pv /apps/hpl/bin ; mkdir -pv /apps/hpl/lib
+RUN mv /tmp/hpl-2.3/bin/Linux_Intel64/* /apps/hpl/bin ; mv /tmp/hpl-2.3/lib/Linux_Intel64/* /apps/hpl/lib
+RUN rm -rf /tmp/hpl-2.3*
+
+
+From docker.io/ubuntu:22.04 
+
+COPY --from=build /apps/ /apps/
+
+RUN apt-get update -y && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    gfortran curl wget ca-certificates gpg-agent software-properties-common 
+RUN   rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB | apt-key add -
+RUN echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
+RUN apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    intel-oneapi-compiler-dpcpp-cpp-runtime \
+    intel-oneapi-runtime-mkl \
+    intel-oneapi-compiler-fortran-runtime \
+    intel-oneapi-runtime-mpi
+RUN rm -rf /var/lib/apt/lists/*  
+
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/latest//libfabric/lib/prov:/usr/lib64/libfabric
+ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/latest
+ENV LD_LIBRARY_PATH=/apps/hpl/lib:/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest//libfabric/lib:/opt/intel/oneapi/mpi/latest//lib/release:/opt/intel/oneapi/mpi/latest//lib:/opt/intel/oneapi/compiler/latest/linux/lib:/opt/intel/oneapi/compiler/latest/linux/lib/x64:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin
+ENV NLSPATH=/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin/locale/%l_%t/%N
+ENV PATH=/apps/hpl/bin:/opt/intel/oneapi/mpi/latest//libfabric/bin:/opt/intel/oneapi/mpi/latest//bin:/opt/intel/oneapi/compiler/latest/linux/bin/intel64:/opt/intel/oneapi/compiler/latest/linux/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV CPATH=/opt/intel/oneapi/tbb/lastest/env/../include:/opt/intel/oneapi/mpi/letest//include
+
