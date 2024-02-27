@@ -1,0 +1,14 @@
+Bootstrap: docker
+From: rockylinux:9.3
+
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+yum update -y
+yum install -y \
+   lshw NetworkManager nmap  
+
+

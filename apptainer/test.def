@@ -1,0 +1,27 @@
+
+Bootstrap: docker
+From: ubuntu:22.04
+Stage: final
+
+
+%post
+apt-get update -y
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils libc6-dev gpg-agent wget gnupg curl  ca-certificates software-properties-common make gfortran 
+
+curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB | apt-key add -
+echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
+
+apt-get update && apt-get upgrade -y && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    curl ca-certificates gpg-agent software-properties-common && \
+  rm -rf /var/lib/apt/lists/*
+curl -fsSL https://repositories.intel.com/graphics/intel-graphics.key | apt-key add -
+echo "deb [trusted=yes arch=amd64] https://repositories.intel.com/graphics/ubuntu jammy flex" > /etc/apt/sources.list.d/intel-graphics.list
+
+apt-get update -y  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    intel-oneapi-runtime-dpcpp-cpp intel-oneapi-runtime-dpcpp-library \ 
+    intel-oneapi-runtime-fortran intel-oneapi-runtime-ipp intel-oneapi-runtime-libs intel-oneapi-runtime-mkl intel-oneapi-runtime-mpi intel-oneapi-runtime-openmp \
+    && rm -rf /var/lib/apt/lists/*  
+
+

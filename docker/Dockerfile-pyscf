@@ -1,0 +1,22 @@
+FROM docker.io/rockylinux/rockylinux:9.0
+
+ENV PATH=/apps/python3/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/ipp/2021.5.2/lib/intel64:/apps/python3/lib:$LD_LIBRARY_PATH
+ENV PYTHONPATH=/apps
+RUN yum update -y \
+    && yum install -y epel-release ; yum install -y \
+      epel-release hdf5 wget make openssl-devel bzip2-devel libffi-devel zlib-devel gcc \
+    && cd /tmp ; wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz \
+    && tar -vxf Python-3.9.10.tgz ; rm Python-3.9.10.tgz  \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python3 \
+    && make ; make install \
+    && cd /tmp ; rm -r Python-3.9.10 \ 
+    && ln -s /apps/python3/bin/pip3 /apps/python3/bin/pip \
+    && ln -s /apps/python3/bin/python3 /apps/python3/bin/python \
+    && pip3 install pyscf==2.0.1 \
+#QMCPACK converter
+    && cd /apps ; wget https://raw.githubusercontent.com/QMCPACK/qmcpack/develop/src/QMCTools/PyscfToQmcpack.py
+
+
+
+

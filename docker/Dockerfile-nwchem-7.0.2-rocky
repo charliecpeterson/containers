@@ -1,7 +1,7 @@
 #
-FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
+FROM ghcr.io/charliecpeterson/base:build-rocky9.0-gcc12.1.0-oneapi2022.1.2 as build
 ENV ARMCI_NETWORK=MPI-SPAWN 
-ENV NWCHEM_TOP=/opt/nwchem-7.0.2-release 
+ENV NWCHEM_TOP=/tmp/nwchem-7.0.2-release 
 ENV NWCHEM_TARGET=LINUX64 
 ENV NWCHEM_MODULES="all" 
 ENV BLASOPT=" -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core  -lpthread -lutil -lm -ldl" 
@@ -17,11 +17,12 @@ ENV USE_MPIF4=y
 ENV FC=ifort 
 ENV CC=icc 
 ENV CXX=icpc
-RUN apt update ; apt-get install -y --no-install-recommends  gcc-multilib  openssl libssl-dev ssh wget make git curl wget  \
-  && cd /opt ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
+RUN yum update -y ; yum install -y   which wget make git curl wget  \
+  && cd /tmp ;curl -SL   https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.0.2-release.tar.gz  | tar xzf - \
   && cd $NWCHEM_TOP/src \
   &&  sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh \
-  && make FC=ifort CC=icc CXX=icpc \
+  && which mpif90 \
+  && make  \
   && mkdir -pv /apps/nwchem/bin \
   && mkdir -pv /apps/nwchem/data \
   && cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /apps/nwchem/bin \
@@ -35,7 +36,7 @@ RUN apt update ; apt-get install -y --no-install-recommends  gcc-multilib  opens
   && cp -r libraryps /apps/nwchem/data \
   && rm -rf $NWCHEM_TOP  
 
-FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+FROM ghcr.io/charliecpeterson/base:run-rocky9.0-gcc12.1.0-oneapi2022.1.2
 COPY --from=build /apps/ /apps/
 ENV NWCHEM_DIR=/apps/nwchem
 ENV PATH=${NWCHEM_DIR}/bin:$PATH

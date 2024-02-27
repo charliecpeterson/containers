@@ -1,5 +1,5 @@
 #  
-FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
+FROM ghcr.io/charliecpeterson/base:build-ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 ENV PATH=/apps/python/bin:$PATH
@@ -37,9 +37,9 @@ RUN cd /tmp ;curl -SL  https://gitlab.com/Molcas/OpenMolcas/-/archive/v21.10/Ope
   && make ; make install  \
   && cd /tmp ; rm -rf OpenMolcas-v21.10
 
-FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+FROM ghcr.io/charliecpeterson/base:run-ubuntu20.04-gcc8.5.0-oneapi2022.1.2
 RUN bupLD=$LD_LIBRARY_PATH ; unset LD_LIBRARY_PATH ; apt-get update  \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libhdf5-dev \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libgsl-dev libhdf5-dev \
     && LD_LIBRARY_PATH=$bupLD \
     && rm -rf /var/lib/apt/lists/* 
 COPY --from=build /apps/ /apps/

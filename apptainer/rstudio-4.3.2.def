@@ -1,0 +1,76 @@
+Bootstrap: docker
+From: rocker/rstudio:4.3.0
+
+%labels
+MAINTAINER Charles Peterson <charles.c.peterson3@gmai.com>
+
+%post
+bash << EOF
+userdel -r rstudio
+apt update && apt install -y pkg-config zlib1g zlib1g-dev openssl wget make git vim less libhdf5-dev gcc gfortran g++ ca-certificates cmake ant libreadline-dev libx11-dev libxt-dev bzip2 xz-utils libpcre2-dev libcurl4-openssl-dev gnupg curl libbz2-dev liblzma-dev iproute2
+apt update -y && apt install -y fontconfig libfreetype6-dev libxml2-dev libproj-dev libgsl-dev bc \
+                    libfontconfig1-dev pkg-config libharfbuzz-dev libfribidi-dev \
+                   webp-pixbuf-loader zstd libzstd-dev libwebp-dev \
+                   openjdk-17-jdk xorg libx11-dev libxt-dev libjpeg-dev libpng-dev libcairo2-dev libglpk-dev fftw3-dev patch libhdf5-serial-dev
+
+wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor |  tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+
+echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
+
+apt update -y ; apt install -y intel-basekit intel-hpckit
+mkdir -pv /apps/R
+export R_VERSION=4.3.2
+export MKL_INTERFACE_LAYER=GNU,LP64
+export MKL_THREADING_LAYER=GNU
+export CFLAGS="-O3  -m64 -fPIC -I\${MKLROOT}/include"
+export FCFLAGS="-m64 -O3 -fPIC -I\${MKLROOT}/include"
+export BLAS_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt"
+export LAPACK_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt"
+
+# Source the oneAPI environment
+source /opt/intel/oneapi/setvars.sh
+
+curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz
+tar -xzvf R-${R_VERSION}.tar.gz
+cd R-${R_VERSION}
+CXX11=g++ CXX14=g++ CXX17=g++ CXX20=g++ CXX=g++ CC=gcc FC=gfortran ./configure  --with-blas='-L${MKLROOT}/lib/intel64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl' --enable-R-shlib --with-x=yes --with-lapack  --enable-threads=posix --enable-memory-profiling
+make ; make install
+
+
+echo "[*]\nlog-level=warn\nlogger-type=syslog" > /etc/rstudio/logging.conf
+echo "r-libs-user=~/R/APPTAINER/h2-rstudio_4.3.2" > /etc/rstudio/rsession.conf
+# Link the MKL libraries to /lib/intel64
+mkdir -p /lib/intel64/ ; ln -s /opt/intel/oneapi/mkl/2024.0/lib/* /lib/intel64/
+
+# Install R packages directly
+R -q -e 'install.packages(c("curl", "RCurl", "jsonlite", "mice", "missForest", "dplyr", "ggplot2", "tidyr", "caret", "randomForest", "stringr", "tidymodels", "shiny", "e1071","nnet", "rpart", "xgboost", "glmnet"))'
+R -q -e 'install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))'
+EOF
+
+%runscript
+#!/bin/bash
+source /opt/intel/oneapi/setvars.sh --force 
+rserverport="${R_SERVER_PORT:-8787}"
+GREEN='\033[0;32m'
+NOCOLOR='\033[0m'
+checkport=`ss -tulpn | grep ":${rserverport}"`
+while [ ! -z "$checkport" ]
+do
+   rserverport=`echo ${rserverport} + 1 | bc`
+   echo $rserverport
+   checkport=`ss -tulpn | grep ":${rserverport}"`
+done
+export PORT=$rserverport
+export HOST=`hostname`
+
+export PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
+
+echo  -e "Your Rstudio server is running on: ${GREEN} ${HOST} ${NOCOLOR}"
+echo  -e "It is running on PORT: ${GREEN} ${PORT} ${NOCOLOR}"
+echo ""
+echo -e "Your Rstudio Username is: ${GREEN} ${USER} ${NOCOLOR}"
+echo -e "Your Rstudio Password is: ${GREEN} ${PASSWORD} ${NOCOLOR}"
+echo "Please run [CTRL-C] on this process to exit Rstudio"
+echo ""
+
+rserver --server-user=${USER} --www-port=${PORT} --auth-none=0 --auth-pam-helper-path=pam-helper

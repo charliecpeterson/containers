@@ -17,7 +17,7 @@ RUN mkdir -pv /apps ; cd /apps \
 
 FROM ghcr.io/charliecpeterson/base:run-ubuntu20.04-gcc10.3.0-oneapi2022.1.2
 RUN apt update ; apt-get install -y --no-install-recommends \
-    python3  \
+    time python3  \
     && rm -rf /var/lib/apt/lists/* 
 
 COPY --from=build /apps/ /apps/

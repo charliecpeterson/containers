@@ -1,5 +1,5 @@
 #
-FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
+FROM ghcr.io/charliecpeterson/base:build-ubuntu20.04-gcc8.5.0-oneapi2022.1.2 as build
 ENV FC=gfortran
 ENV FC_FLAGS="-O3 -save -mkl=sequential"
 ENV FC_MPILD="-mkl=sequential"
@@ -15,12 +15,12 @@ RUN bupLD=$LD_LIBRARY_PATH ; unset LD_LIBRARY_PATH \
   && mkdir -pv /apps ; cd /apps \ 
   && git clone https://github.com/compas/grasp \
   && cd grasp \
-  && git checkout 966fd6d154bd421033cf2cf56eb203d521a79e2e \
+  && git checkout 7f429bfb2de67716d2ccfb78c43e07c141c59526 \
   && mkdir -pv build ; cd build \
   && cmake .. ; make ; make install
 
 
-FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc8.5.0-oneapi2022.1.2
+FROM ghcr.io/charliecpeterson/base:run-ubuntu20.04-gcc8.5.0-oneapi2022.1.2
 COPY --from=build /apps/grasp /apps/grasp
 ENV GRASP="/apps/grasp"
 ENV PATH=/apps/grasp/bin:$PATH
