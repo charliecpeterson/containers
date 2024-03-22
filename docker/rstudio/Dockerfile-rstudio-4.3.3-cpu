@@ -1,0 +1,32 @@
+FROM docker.io/ubuntu:22.04
+ENV S6_VERSION=v2.1.0.2
+ENV RSTUDIO_VERSION=2023.12.0+369
+ENV DEFAULT_USER=rstudio
+ENV PANDOC_VERSION=default
+ENV QUARTO_VERSION=default
+ENV R_VERSION=4.3.3
+ENV R_HOME=/usr/local/lib/R
+ENV PYTHON_VER=3.10.10
+ENV TZ=Etc/UTC
+ENV PYTHON_CONFIGURE_OPTS=--enable-shared
+ENV RETICULATE_AUTOCONFIGURE=0
+ENV LD_LIBRARY_PATH=/usr/local/lib/R/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+COPY scripts /scripts
+ENV CRAN=https://cloud.r-project.org/
+ENV LANG=en_US.UTF-8
+
+RUN /scripts/install_pre.sh
+RUN /scripts/install_R.sh
+#RUN /scripts/install_python.sh
+RUN /scripts/install_Rpackages.sh
+RUN /scripts/install_rstudio.sh
+RUN /scripts/install_pandoc.sh
+RUN /scripts/install_quarto.sh
+
+EXPOSE 8787
+
+COPY scripts/rstudio-startup.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+ENTRYPOINT ["/usr/local/bin/start.sh"]
+

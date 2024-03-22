@@ -1,27 +1,22 @@
-
 Bootstrap: docker
-From: ubuntu:22.04
-Stage: final
+From: rocker/rstudio:4.3.0
 
+%labels
+MAINTAINER Charles Peterson <charles.c.peterson3@gmai.com>
 
 %post
-apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils libc6-dev gpg-agent wget gnupg curl  ca-certificates software-properties-common make gfortran 
+bash << EOF
+userdel -r rstudio
+apt update && apt install -y pkg-config zlib1g zlib1g-dev openssl wget make git vim less libhdf5-dev gcc gfortran g++ ca-certificates cmake ant libreadline-dev libx11-dev libxt-dev bzip2 xz-utils libpcre2-dev libcurl4-openssl-dev gnupg curl libbz2-dev liblzma-dev iproute2
 
-curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB | apt-key add -
-echo "deb [trusted=yes] https://apt.repos.intel.com/oneapi all main " > /etc/apt/sources.list.d/oneAPI.list
 
-apt-get update && apt-get upgrade -y && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    curl ca-certificates gpg-agent software-properties-common && \
-  rm -rf /var/lib/apt/lists/*
-curl -fsSL https://repositories.intel.com/graphics/intel-graphics.key | apt-key add -
-echo "deb [trusted=yes arch=amd64] https://repositories.intel.com/graphics/ubuntu jammy flex" > /etc/apt/sources.list.d/intel-graphics.list
+wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor |  tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
 
-apt-get update -y  \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    intel-oneapi-runtime-dpcpp-cpp intel-oneapi-runtime-dpcpp-library \ 
-    intel-oneapi-runtime-fortran intel-oneapi-runtime-ipp intel-oneapi-runtime-libs intel-oneapi-runtime-mkl intel-oneapi-runtime-mpi intel-oneapi-runtime-openmp \
-    && rm -rf /var/lib/apt/lists/*  
+echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
+
+apt update -y ; apt install -y intel-basekit intel-hpckit
+
+bash -c 'source /opt/intel/oneapi/setvars.sh'
+icx -h
 
 

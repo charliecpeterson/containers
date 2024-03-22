@@ -4,52 +4,59 @@
 # Rstudio/R container for Hoffman2
 # Built with oneAPI/MKL
 # # Created 8/2023
-FROM docker.io/rocker/rstudio:4.3.0
-RUN apt update && apt install -y pkg-config zlib1g zlib1g-dev openssl wget make git vim less libhdf5-dev gcc gfortran g++ ca-certificates cmake ant libreadline-dev libx11-dev libxt-dev bzip2 xz-utils libpcre2-dev libcurl4-openssl-dev gnupg curl libbz2-dev liblzma-dev iproute2
-RUN apt update -y && apt install -y fontconfig libfreetype6-dev libxml2-dev libproj-dev libgsl-dev bc \
-                    libfontconfig1-dev pkg-config libharfbuzz-dev libfribidi-dev \
-                   webp-pixbuf-loader zstd libzstd-dev libwebp-dev \
-                   xorg libx11-dev libxt-dev libjpeg-dev libpng-dev libcairo2-dev libglpk-dev fftw3-dev patch libhdf5-serial-dev
-
-RUN wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor |  tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
-
-RUN echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
-
-RUN apt update -y ; apt install -y intel-basekit intel-hpckit
-ENV R_VERSION=4.3.2
-ENV MKL_INTERFACE_LAYER=GNU,LP64 
-ENV MKL_THREADING_LAYER=GNU
-ENV CFLAGS="-O3  -m64 -fPIC -I\${MKLROOT}/include"
-ENV FCFLAGS="-m64 -O3 -fPIC -I\${MKLROOT}/include"
-ENV BLAS_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt"
-ENV LAPACK_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt"
-RUN bash -c "source /opt/intel/oneapi/setvars.sh \
-     && curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz \
-     && tar -xzvf R-${R_VERSION}.tar.gz \
-     &&  cd R-${R_VERSION}  \
-     && CXX11=g++ CXX14=g++ CXX17=g++ CXX20=g++ CXX=g++ CC=gcc FC=gfortran ./configure  \ 
-        --with-blas='-L${MKLROOT}/lib/intel64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl' \
-       --enable-R-shlib --with-x=yes --with-lapack  --enable-threads=posix --enable-memory-profiling \
-     && make ; make install "
-       
-
-
-ENV export R_BIN=$(which R)
-RUN echo "rsession-which-r=${R_BIN}" >/etc/rstudio/rserver.conf
-
-RUN echo "[*]\nlog-level=warn\nlogger-type=syslog" > /etc/rstudio/logging.conf
-
-ENV R_VER="4.3.2"
-# Link the MKL libraries to /lib/intel64
-RUN mkdir -p /lib/intel64/ ; ln -s /opt/intel/oneapi/mkl/2024.0/lib/* /lib/intel64/
-
-RUN bash -c "source /opt/intel/oneapi/setvars.sh --force ; R -q -e 'install.packages(c(\"curl\", \"RCurl\", \"jsonlite\"))'"
-RUN bash -c "source /opt/intel/oneapi/setvars.sh --force ; R -q -e 'install.packages(\"h2o\", type=\"source\", repos=(c(\"http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R\")))'"
-
-RUN mkdir -pv /apps/rstudio
-COPY ./rstudio-startup.sh /apps/rstudio/rstudio-startup.sh
-RUN chmod 755 /apps/rstudio/rstudio-startup.sh
-
-ENTRYPOINT bash -c "source /opt/intel/oneapi/setvars.sh --force ; /apps/rstudio/rstudio-startup.sh"
-
 #
+
+# Use the base image specified in the Apptainer Bootstrap definition
+FROM rocker/rstudio:4.3.0
+
+# Convert %labels to LABEL in Dockerfile
+LABEL MAINTAINER="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+# Convert %post script into RUN instructions in Dockerfile
+# Note: Combine RUN commands using && to reduce the number of layers created
+ENV DEBIAN_FRONTEND=noninteractive
+ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+RUN  userdel -r rstudio && \
+    apt update && apt install -y pkg-config zlib1g zlib1g-dev openssl wget make git vim less libhdf5-dev gcc gfortran g++ ca-certificates cmake ant libreadline-dev libx11-dev libxt-dev bzip2 xz-utils libpcre2-dev libcurl4-openssl-dev gnupg curl libbz2-dev liblzma-dev iproute2 && \
+    apt update -y && apt install -y fontconfig libfreetype6-dev libxml2-dev libproj-dev libgsl-dev bc \
+                   libfontconfig1-dev pkg-config libharfbuzz-dev libfribidi-dev \
+                   webp-pixbuf-loader zstd libzstd-dev libwebp-dev \
+                   openjdk-17-jdk xorg libx11-dev libxt-dev libjpeg-dev libpng-dev libcairo2-dev libglpk-dev fftw3-dev patch libhdf5-serial-dev
+
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i cuda-keyring_1.1-1_all.deb && \
+    apt-get update && apt-get install -y cuda-toolkit-11-7  && \
+    wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor |  tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null && \
+    echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list && \
+    apt update -y && apt install -y intel-basekit intel-hpckit
+
+ENV PATH=/usr/local/cuda-11/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda-11/lib64:$LD_LIBRARY_PATH
+ENV CPATH=/usr/local/cuda-11/include:$CPATH
+
+RUN  mkdir -pv /apps/R 
+ENV R_VERSION="4.3.2" 
+ENV MKL_INTERFACE_LAYER=GNU,LP64
+ENV MKL_THREADING_LAYER=GNU
+ENV CFLAGS="-O3  -m64 -fPIC -I\${MKLROOT}/include" 
+ENV BLAS_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt" 
+ENV LAPACK_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt" 
+RUN /bin/bash -c "echo 'R is ${R_VERSION}' && \
+    source /opt/intel/oneapi/setvars.sh && \
+    curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
+    tar -xzvf R-${R_VERSION}.tar.gz && \
+    cd R-${R_VERSION} && \
+    CXX11=g++ CXX14=g++ CXX17=g++ CXX20=g++ CXX=g++ CC=gcc FC=gfortran ./configure --with-blas='-L\${MKLROOT}/lib/intel64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl' --enable-R-shlib --with-x=yes --with-lapack --enable-threads=posix --enable-memory-profiling && \
+    make ; make install && \
+    echo '[*]\nlog-level=warn\nlogger-type=syslog' > /etc/rstudio/logging.conf && \
+    echo 'r-libs-user=~/R/APPTAINER/h2-rstudio_4.3.2' > /etc/rstudio/rsession.conf && \
+    mkdir -p /lib/intel64/ ; ln -s /opt/intel/oneapi/mkl/2024.0/lib/* /lib/intel64/ && \
+    R -q -e 'install.packages(c(\"torch\", \"tensorflow\", \"curl\", \"RCurl\", \"jsonlite\", \"mice\", \"missForest\", \"dplyr\", \"ggplot2\", \"tidyr\", \"caret\", \"randomForest\", \"stringr\", \"tidymodels\", \"shiny\", \"e1071\",\"nnet\", \"rpart\", \"xgboost\", \"glmnet\"))' && \
+    R -q -e 'install.packages(\"h2o\", type=\"source\", repos=(c(\"http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R\")))' && \
+    R -q -e 'torch::install_torch()'"
+
+
+COPY rstudio-startup.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+ENTRYPOINT ["/usr/local/bin/start.sh"]
+

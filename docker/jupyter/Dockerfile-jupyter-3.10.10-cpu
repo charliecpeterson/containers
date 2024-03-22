@@ -1,0 +1,18 @@
+FROM docker.io/ubuntu:22.04
+ENV PYTHON_VER=3.10.10
+ENV TZ=Etc/UTC
+ENV PYTHON_CONFIGURE_OPTS=--enable-shared
+ENV RETICULATE_AUTOCONFIGURE=0
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+COPY scripts /scripts
+ENV CRAN=https://cloud.r-project.org/
+ENV LANG=en_US.UTF-8
+
+RUN /scripts/install_pre.sh
+RUN /scripts/install_python.sh
+RUN rm -rf /root/.cache
+
+COPY scripts/jupyter-startup.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+ENTRYPOINT ["/usr/local/bin/start.sh"]
+

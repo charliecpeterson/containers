@@ -1,0 +1,23 @@
+FROM docker.io/ubuntu:22.04
+ENV PYTHON_VER=3.10.10
+ENV TZ=Etc/UTC
+ENV NVBLAS_CONFIG_FILE=/etc/nvblas.conf
+ENV PYTHON_CONFIGURE_OPTS=--enable-shared
+ENV RETICULATE_AUTOCONFIGURE=0
+ENV CUDA_HOME=/usr/local/cuda-12.1
+ENV PATH=${PATH}:${CUDA_HOME}/bin
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
+COPY scripts /scripts
+ENV CRAN=https://cloud.r-project.org/
+#ENV MKL_INTERFACE_LAYER=GNU,LP64
+#ENV MKL_THREADING_LAYER=GNU
+ENV LANG=en_US.UTF-8
+
+RUN /scripts/install_pre.sh
+RUN /scripts/install_python.sh
+RUN rm -rf /root/.cache
+
+COPY scripts/jupyter-startup.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+ENTRYPOINT ["/usr/local/bin/start.sh"]

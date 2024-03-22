@@ -5,59 +5,44 @@ From: rocker/rstudio:4.3.0
 MAINTAINER Charles Peterson <charles.c.peterson3@gmai.com>
 
 %post
-#!/bin/bash
-export DEBIAN_FRONTEND=noninteractive
-export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 userdel -r rstudio
 apt update && apt install -y pkg-config zlib1g zlib1g-dev openssl wget make git vim less libhdf5-dev gcc gfortran g++ ca-certificates cmake ant libreadline-dev libx11-dev libxt-dev bzip2 xz-utils libpcre2-dev libcurl4-openssl-dev gnupg curl libbz2-dev liblzma-dev iproute2
 apt update -y && apt install -y fontconfig libfreetype6-dev libxml2-dev libproj-dev libgsl-dev bc \
-                   libfontconfig1-dev pkg-config libharfbuzz-dev libfribidi-dev \
+                    libfontconfig1-dev pkg-config libharfbuzz-dev libfribidi-dev \
                    webp-pixbuf-loader zstd libzstd-dev libwebp-dev \
                    openjdk-17-jdk xorg libx11-dev libxt-dev libjpeg-dev libpng-dev libcairo2-dev libglpk-dev fftw3-dev patch libhdf5-serial-dev
 
-#wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-#dpkg -i cuda-keyring_1.1-1_all.deb
+wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor |  tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
 
-#apt-get update && apt-get install -y cuda-toolkit cuda
-export PATH=/usr/local/cuda-12/bin:$PATH
+echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
 
-#wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor |  tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
-
-#echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
-
-#apt update -y ; apt install -y intel-basekit intel-hpckit
-
+apt update -y ; apt install -y intel-basekit intel-hpckit
 mkdir -pv /apps/R
-export RVERSION="4.3.2"
-export MKL_INTERFACE_LAYER=GNU,LP64
+export R_VERSION=4.3.2
+export MKL_INTERFACE_LAYER=GNU,LP64 
 export MKL_THREADING_LAYER=GNU
 export CFLAGS="-O3  -m64 -fPIC -I\${MKLROOT}/include"
-export CFLAGS="-m64 -O3 -fPIC -I\${MKLROOT}/include"
+export FCFLAGS="-m64 -O3 -fPIC -I\${MKLROOT}/include"
 export BLAS_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt"
 export LAPACK_LIBS="-L\${MKLROOT}/lib/intel64 -lmkl_rt"
+bash -c "source /opt/intel/oneapi/setvars.sh 
+     curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz 
+     tar -xzvf R-${R_VERSION}.tar.gz 
+     cd R-${R_VERSION}  
+     CXX11=g++ CXX14=g++ CXX17=g++ CXX20=g++ CXX=g++ CC=gcc FC=gfortran ./configure  --with-blas='-L${MKLROOT}/lib/intel64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl' --enable-R-shlib --with-x=yes --with-lapack  --enable-threads=posix --enable-memory-profiling 
+     make ; make install "
+       
 
-echo "R is ${RVERSION}"
-# Source the oneAPI environment
-source /opt/intel/oneapi/setvars.sh
-echo "R is ${RVERSION}"
-curl -O https://cran.rstudio.com/src/base/R-4/R-${RVERSION}.tar.gz
-tar -xzvf R-${R_VERSION}.tar.gz
-cd R-${RVERSION}
-CXX11=g++ CXX14=g++ CXX17=g++ CXX20=g++ CXX=g++ CC=gcc FC=gfortran ./configure  --with-blas='-L${MKLROOT}/lib/intel64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl' --enable-R-shlib --with-x=yes --with-lapack  --enable-threads=posix --enable-memory-profiling
-make ; make install
 
+#echo "rsession-which-r=/apps/R/bin/R" >/etc/rstudio/rserver.conf
 
 echo "[*]\nlog-level=warn\nlogger-type=syslog" > /etc/rstudio/logging.conf
 echo "r-libs-user=~/R/APPTAINER/h2-rstudio_4.3.2" > /etc/rstudio/rsession.conf
 # Link the MKL libraries to /lib/intel64
-mkdir -p /lib/intel64/ ; ln -s /opt/intel/oneapi/mkl/2024.0/lib/* /lib/intel64/
+ mkdir -p /lib/intel64/ ; ln -s /opt/intel/oneapi/mkl/2024.0/lib/* /lib/intel64/
 
-# Install R packages directly
-R -q -e 'install.packages(c("torch","curl", "RCurl", "jsonlite", "mice", "missForest", "dplyr", "ggplot2", "tidyr", "caret", "randomForest", "stringr", "tidymodels", "shiny", "e1071","nnet", "rpart", "xgboost", "glmnet"))'
-R -q -e 'install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))'
-#R -q -e 'install_torch()'
-%environment
-export PATH=/usr/local/cuda-12/bin:PATH
+bash -c "source /opt/intel/oneapi/setvars.sh --force ; R -q -e 'install.packages(c(\"curl\", \"RCurl\", \"jsonlite\"))'"
+bash -c "source /opt/intel/oneapi/setvars.sh --force ; R -q -e 'install.packages(\"h2o\", type=\"source\", repos=(c(\"http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R\")))'"
 
 %runscript
 #!/bin/bash

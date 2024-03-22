@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: openfoam/openfoam9-paraview56
+
+%help
+This container is for using OpenFoam 9 on UCLA's Hoffman2
+Based on OpenFOAM's DockerHub image
+https://hub.docker.com/u/openfoam
+This image uses docker://openfoam/openfoam9-paraview56
+The WM_PROJECT_DIR is set to /opt/openfoam9
+
+%labels
+Author Charles Peterson <cpeterson@ucla.edu>
+
+%post
+apt -y update
+echo "export FOAM_INST_DIR=/opt ; . /opt/openfoam9/etc/bashrc" >> $SINGULARITY_ENVIRONMENT
+cd /opt
+curl -SL https://github.com/fppimenta/rheoTool/archive/refs/tags/v5.0.tar.gz | tar xzf -
+
+
+
+
+%runscript
+GREEN='\033[0;32m'
+NOCOLOR='\033[0m'
+echo ""
+echo "OpenFOAM 9 installation is located at ${GREEN} $WM_PROJECT_DIR ${NOCOLOR}" 
+echo ""
+exec "$@"
+
