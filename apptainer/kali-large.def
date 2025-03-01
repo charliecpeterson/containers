@@ -1,0 +1,23 @@
+Bootstrap: docker
+From: docker.io/kalilinux/kali-rolling:latest
+
+%labels
+    Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    echo 'console-setup console-setup/charmap47 select UTF-8' | debconf-set-selections
+
+    apt-get update
+    apt-get install -y \
+      kali-linux-large \
+      speedtest-cli \
+      curl \
+      wget \
+      net-tools \
+      tcpdump \
+      nmap \
+      aircrack-ng \
+      hydra
+    pip3 install --no-cache-dir pyshark scapy matplotlib seaborn pandas numpy jupyterlab \
+                                requests beautifulsoup4 paramiko cryptography 

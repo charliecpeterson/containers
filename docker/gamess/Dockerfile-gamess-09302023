@@ -1,0 +1,28 @@
+# Stage 1: Development stage
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1 AS devel
+
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+COPY ./gamess-09302023.tar.gz /apps/gamess-09302023.tar.gz
+
+RUN dnf install -y python3-pip tcsh && \
+    pip3 install jinja2 && \
+    cd /apps && \
+    tar -vxf gamess-09302023.tar.gz && \
+    rm gamess-09302023.tar.gz && \
+    cd gamess && \
+    ./bin/create-install-info.py --target linux64 --oneapi-ifx --fortran_version 2024.1 --math mkl --mpi_lib impi && \
+    make modules && \
+    make gamess
+
+# Stage 2: Final stage
+FROM ghcr.io/charliecpeterson/build:runtime-rocky9.3-oneapi2024.1 
+
+COPY --from=devel /apps /apps
+COPY ./gamessrun.sh /apps/gamess
+RUN dnf install -y tcsh
+
+ENV PATH="/apps/gamess:$PATH"
+
+ENTRYPOINT [ "/apps/gamess/gamessrun.sh"]
+

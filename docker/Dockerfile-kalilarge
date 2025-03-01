@@ -1,0 +1,32 @@
+# Use Kali Linux rolling image as the base
+FROM docker.io/kalilinux/kali-rolling:latest
+
+# Set metadata using labels
+LABEL Author="Charles Peterson" Email="charles.c.peterson3@gmail.com"
+
+# Set environment variable to make installation non-interactive
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update and install packages
+RUN echo 'console-setup console-setup/charmap47 select UTF-8' | debconf-set-selections && \
+    apt-get update && \
+    apt-get install -y \
+    kali-linux-large \
+    speedtest-cli \
+    curl \
+    wget \
+    net-tools \
+    tcpdump \
+    nmap \
+    aircrack-ng \
+    hydra && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip3 install --ignore-installed --no-cache-dir pyshark scapy matplotlib seaborn pandas numpy jupyterlab \
+                                requests beautifulsoup4 paramiko cryptography
+
+# Set the default command for the container
+CMD ["bash"]
+

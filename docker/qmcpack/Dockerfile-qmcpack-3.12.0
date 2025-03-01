@@ -1,0 +1,50 @@
+#  
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
+ENV DEBIAN_FRONTEND=noninteractive
+ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+ENV PATH=/apps/python/bin:/apps/hdf5/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/python/lib:/apps/boost/lib:$LD_LIBRARY_PATH
+ENV BOOST_ROOT=/apps/boost
+ENV HDF5_ROOT=/apps/hdf5
+
+RUN apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    git curl make gcc-multilib zlib1g-dev libxml2-dev libssl-dev libsqlite3-dev 
+
+RUN cd /tmp ; curl -SL  https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz | tar xzf - \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python \
+    && make ; make install \
+    && cd /tmp ; rm -r Python-3.9.10 \
+    && pip3 install h5py \
+    && pip3 install numpy
+
+RUN mkdir -pv /apps/hdf5 \
+    && cd /tmp ; git clone https://github.com/HDFGroup/hdf5 \
+    && cd hdf5 ; git checkout hdf5-1_12_1 \
+    && FC=mpif90 CC=mpicc CXX=mpicxx  ./configure --enable-parallel --prefix=/apps/hdf5 \
+    && make ; make install \
+    && cd /tmp ; rm -rf hdf5 
+
+RUN cd /tmp ; curl -SL https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz | tar xzf - \
+  && cd boost_1_77_0 \
+  && ./bootstrap.sh --prefix=/apps/boost \
+  && ./b2 install \
+  && cd /tmp ; rm -rf boost_1_77_0
+
+RUN cd /tmp ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.13.0.tar.gz  | tar xzf - \
+  && cd qmcpack-3.13.0/build \
+  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=/apps/qmcpack .. \
+  && make ; make install  \
+  && cd /tmp ; rm -rf qmcpack-3.13.0
+
+FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+RUN apt-get update  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libxml2
+
+COPY --from=build /apps/ /apps/
+RUN rm -rf  /apps/hdf5/bin ; rm -rf /apps/hdf5share \
+    rm -rf /apps/python/share
+
+ENV PATH=/apps/qmcpack/bin:/apps/python/bin:/apps/hdf5/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/python/lib:/apps/boost/lib:$LD_LIBRARY_PATH

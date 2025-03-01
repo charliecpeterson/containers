@@ -1,0 +1,55 @@
+# Base image
+FROM docker.io/tacc/tacc-base:rockylinux8-impi19.0.9-common
+
+# Labels
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+
+# Install NWCHEM
+ENV ARMCI_NETWORK=MPI-PR \
+    NWCHEM_TOP=/apps/nwchem-7.2.2-release \
+    NWCHEM_TARGET=LINUX64 \
+    NWCHEM_MODULES="all" \
+    USE_INTERNALBLAS=y \
+    BLAS_SIZE=8 \
+    SCALAPACK_SIZE=8 \
+    USE_64TO32=y \
+    USE_FPICF=y \
+    USE_MPI=y \
+    USE_MPIF=y \
+    USE_MPIF4=y \
+    FC=gfortran \
+    CC=gcc \
+    CXX=g++
+
+RUN mkdir -pv /apps && \
+    cd /apps && curl -SL https://github.com/nwchemgit/nwchem/archive/refs/tags/v7.2.2-release.tar.gz | tar xzf - && \
+    cd $NWCHEM_TOP/src && \
+    sed -i 's/nb=500/nb=1000/g' atomscf/cguess.fh && \
+    make nwchem_config && make 
+
+RUN mkdir -pv /apps/nwchem/bin /apps/nwchem/data && \
+    cp $NWCHEM_TOP/bin/${NWCHEM_TARGET}/nwchem /apps/nwchem/bin && \
+    chmod 755 /apps/nwchem/bin/nwchem && \
+    cd $NWCHEM_TOP/src/basis && cp -r libraries /apps/nwchem/data && \
+    cd $NWCHEM_TOP/src && cp -r data /apps/nwchem/ && \
+    cd $NWCHEM_TOP/src/nwpw && cp -r libraryps /apps/nwchem/data && \
+    rm -rf $NWCHEM_TOP
+
+# Environment setup
+ENV NWCHEM_DIR=/apps/nwchem 
+ENV    NWCHEM_BASIS_LIBRARY=$NWCHEM_DIR/data/libraries/ 
+ENV    NWCHEM_NWPW_LIBRARY=$NWCHEM_DIR/data/libraryps/ 
+ENV    FFIELD=amber 
+ENV    AMBER_1=$NWCHEM_DIR/data/amber_s/ 
+ENV    AMBER_2=$NWCHEM_DIR/data/amber_q/ 
+ENV    AMBER_3=$NWCHEM_DIR/data/amber_x/ 
+ENV    AMBER_4=$NWCHEM_DIR/data/amber_u/ 
+ENV    SPCE=$NWCHEM_DIR/data/solvents/spce.rst 
+ENV    CHARMM_S=$NWCHEM_DIR/data/charmm_s/ 
+ENV    CHARMM_X=$NWCHEM_DIR/data/charmm_x/ 
+ENV    PATH="$PATH:$NWCHEM_DIR/bin"
+
+
+
+

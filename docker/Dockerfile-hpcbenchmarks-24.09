@@ -1,0 +1,64 @@
+# Base image: NVIDIA HPC Benchmarks container
+FROM nvcr.io/nvidia/hpc-benchmarks:24.09
+
+# Install required packages
+RUN apt update && apt install -y \
+    build-essential \
+    libblas-dev \
+    liblapack-dev \
+    libopenmpi-dev \
+    openmpi-bin \
+    autoconf \
+    automake \
+    autotools-dev \
+    cmake \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory for CPU benchmark installations
+WORKDIR /apps
+
+# ----------------------------------------------
+# Install Netlib HPL (CPU Version)
+# ----------------------------------------------
+RUN mkdir -p /apps/hpl && cd /apps/hpl && \
+    wget https://www.netlib.org/benchmark/hpl/hpl-2.3.tar.gz && \
+    tar -xvzf hpl-2.3.tar.gz && \
+    cd hpl-2.3 && \
+    ./configure --prefix=/apps/hpl && \
+    make  && \
+    make install && \
+    cd /apps/hpl && \
+    rm -rf hpl-2.3*
+
+# ----------------------------------------------
+# Install HPL-AI (CPU Version)
+# ----------------------------------------------
+RUN mkdir -p /apps/hpl-ai && cd /apps/hpl-ai && \
+    git clone https://bitbucket.org/icl/hpl-ai && \
+    cd hpl-ai && \
+    autoreconf -ivf && \
+    ./configure --prefix=/apps/hpl-ai && \
+    make && make install && \
+    cd /apps/hpl-ai && \
+    rm -rf hpl-ai
+
+# ----------------------------------------------
+# Install HPCG (CPU Version)
+# ----------------------------------------------
+RUN mkdir -p /apps/hpcg && cd /apps/hpcg && \
+    wget https://hpcg-benchmark.org/downloads/hpcg-3.1.tar.gz && \
+    tar -xvzf hpcg-3.1.tar.gz && \
+    cd hpcg-3.1 && \
+    mkdir build && cd build && \
+    ../configure Linux_MPI && \
+    make && \
+    cd /apps/hpcg && \
+    rm -rf hpcg-3.1*
+
+# Set default working directory
+WORKDIR /workspace
+
+# Set default command to interactive shell
+CMD ["/bin/bash"]

@@ -1,0 +1,21 @@
+#
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1 as devel
+
+RUN dnf install -y epel-release
+RUN dnf install -y python3-devel cmake python3-pip python3-h5py hdf5-devel hdf5
+RUN cd /tmp ;curl -SL https://zenodo.org/records/10680561/files/DIRAC-24.0-Source.tar.gz  | tar xzf - \
+  && cd DIRAC-24.0-Source \
+## Fix output for convert4qmc
+  && sed -i 's/100  FORMAT(3X,I5,2X,A12,2X,4F14.10)/100  FORMAT(3X,I5,2X,A12,2X,4F20.10)/g' src/dirac/dirout.F \
+  && export MATH_ROOT=$MKLROOT \
+  && ./setup --fc=mpif90 --cc=mpicc --cxx=mpicxx --mpi  --prefix=/apps/dirac \
+  && cd build ; make ; make install
+
+FROM ghcr.io/charliecpeterson/build:runtime-rocky9.3-oneapi2024.1 
+RUN dnf install -y epel-release
+RUN  dnf install -y python3-devel python3-pip python3-h5py hdf5-devel hdf5
+
+COPY --from=devel /apps/ /apps/
+ENV PATH=/apps/dirac/bin:$PATH
+ENV DIRACROOT=/apps/dirac
+

@@ -1,0 +1,23 @@
+#
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1 as devel
+ENV FC=gfortran
+ENV FFLAGS="-fallow-argument-mismatch  -O3"
+ENV FC_MPI=mpif90
+ENV CC=gcc
+ENV CXX=g++
+ENV GRASP="/apps/grasp"
+
+
+RUN mkdir -pv /apps ; cd /apps \ 
+  && git clone https://github.com/compas/grasp \
+  && cd grasp \
+  && git checkout a7cee27f9c0a2e2441d43d2d736465ce592f7f15 \
+  && mkdir -pv build ; cd build \
+  && cmake .. ; make ; make install
+
+
+FROM ghcr.io/charliecpeterson/build:runtime-rocky9.3-oneapi2024.1
+COPY --from=devel /apps/grasp /apps/grasp
+ENV GRASP="/apps/grasp"
+ENV PATH=/apps/grasp/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/grasp/lib:$LD_LIBRARY_PATH

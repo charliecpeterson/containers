@@ -1,0 +1,12 @@
+# Base image
+FROM ghcr.io/charliecpeterson/build:runtime-rocky9.3-oneapi2024.1
+
+# Labels
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+COPY molpro-mpp-2024.1.0.linux_x86_64_mpipr.sh /molpro-mpp-2024.1.0.linux_x86_64_mpipr.sh
+COPY molprotoken /root/.molpro/token
+RUN /molpro-mpp-2024.1.0.linux_x86_64_mpipr.sh
+ENV PATH=/usr/local/molpro/molpro_2024.1/bin:$PATH
+
+

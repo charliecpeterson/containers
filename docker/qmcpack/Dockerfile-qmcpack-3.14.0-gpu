@@ -1,0 +1,48 @@
+#  
+FROM ghcr.io/charliecpeterson/base:build-rocky9.0-gcc11.3.0-oneapi2022.2.0-cuda11.7 as build
+ENV PATH=/apps/hdf5/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/boost/lib:$LD_LIBRARY_PATH
+ENV BOOST_ROOT=/apps/boost
+ENV HDF5_ROOT=/apps/hdf5
+
+RUN yum update -y \
+    && yum install -y \
+    python3-devel libxml2-devel \
+    && pip3 install h5py \
+    && pip3 install numpy
+
+
+RUN mkdir -pv /apps/hdf5 \
+    && cd /tmp ; git clone https://github.com/HDFGroup/hdf5 \
+    && cd hdf5 ; git checkout hdf5-1_12_1 \
+    && FC=mpif90 CC=mpicc CXX=mpicxx  ./configure --enable-parallel --prefix=/apps/hdf5 \
+    && make ; make install \
+    && cd /tmp ; rm -rf hdf5 
+
+RUN cd /tmp ; curl -SL https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz | tar xzf - \
+  && cd boost_1_77_0 \
+  && ./bootstrap.sh --prefix=/apps/boost \
+  && ./b2 install \
+  && cd /tmp ; rm -rf boost_1_77_0
+
+RUN cd /tmp ;curl -SL  https://github.com/QMCPACK/qmcpack/archive/refs/tags/v3.14.0.tar.gz  | tar xzf - \
+  && cd qmcpack-3.14.0/build \
+  && cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DENABLE_CUDA=ON  -DCMAKE_INSTALL_PREFIX=/apps/qmcpack .. \
+  && make ; make install  \
+  && cd /tmp ; rm -rf qmcpack-3.14.0
+
+FROM ghcr.io/charliecpeterson/base:run-rocky9.0-gcc11.3.0-oneapi2022.2.0-cuda11.7
+   
+COPY --from=build /apps/ /apps/
+
+RUN yum update -y \
+    && yum install -y \
+    python3-devel libxml2 \
+    && pip3 install h5py \
+    && pip3 install numpy
+
+RUN rm -rf  /apps/hdf5/bin ; rm -rf /apps/hdf5share \
+    rm -rf /apps/python/share
+
+ENV PATH=/apps/qmcpack/bin:/apps/python/bin:/apps/hdf5/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/hdf5/lib:/apps/python/lib:/apps/boost/lib:$LD_LIBRARY_PATH

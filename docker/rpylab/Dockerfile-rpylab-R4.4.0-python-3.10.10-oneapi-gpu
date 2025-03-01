@@ -1,0 +1,32 @@
+FROM ghcr.io/charliecpeterson/rpylab:jupyter-3.10.10-oneapi-gpu as jupyterbuild
+
+FROM ghcr.io/charliecpeterson/rpylab:rstudio-4.4.0-oneapi-gpu as rstudiobuild
+
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1-cuda11.8
+
+ENV S6_VERSION=v2.1.0.2 \
+    RSTUDIO_VERSION=2023.12.1-402 \
+    QUARTO_VERSION=1.4.553 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8 \
+    R_HOME=/usr/local/lib64/R \
+    R_VERSION=4.3.3
+
+ENV PYTHON_VER=3.10.10 \
+    TF_VERSION=2.12.1 \
+    TORCH_VER=2.2.2
+
+COPY scripts /scripts
+ENV USE_ONEAPI=TRUE
+
+COPY --from=jupyterbuild /usr/ /usr/
+COPY --from=rstudiobuild /usr/ /usr/
+COPY --from=rstudiobuild /etc/rstudio/ /etc/rstudio/
+RUN /scripts/install_rpy.sh 
+
+
+# Set the entrypoint
+ENTRYPOINT ["/scripts/startup.sh"]
+
+

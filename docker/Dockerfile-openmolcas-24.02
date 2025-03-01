@@ -1,0 +1,53 @@
+# Base image
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1 as devel
+
+# Labels
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+# Install packages and set up oneAPI repository
+RUN yum -y update && \
+    yum install -y pkgconfig python3-devel python3-pip gcc gcc-gfortran gcc-c++ make wget unzip gmp-devel cmake mpfr-devel libmpc-devel openssl-devel && \ 
+    yum groupinstall -y "Development Tools" 
+
+
+RUN cd /tmp ; curl -SL https://github.com/GlobalArrays/ga/releases/download/v5.8.2/ga-5.8.2.tar.gz | tar xzf - \
+  &&  cd ga-5.8.2/ ; ./autogen.sh ; FC=ifx CC=icx CXX=icpx MPIF77=mpiifx MPICC=mpiicx MPICXX=mpiiicpx ./configure --enable-i8 --enable-shared --with-lapack=-mkl  --with-scalapack8 --with-blas8  --prefix=/apps/ga \
+  && make ; make install \
+  && cd /tmp ; rm -rf ga-5.8.2
+
+ENV PATH=/apps/ga/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/ga/lib:$LD_LIBRARY_PATH
+ENV CPATH=/apps/ga/include:$CPATH
+
+RUN cd /tmp ; curl -SL https://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz/download | tar xzf - \
+  && cd boost_1_56_0 \
+  && ./bootstrap.sh  --with-libraries=program_options,filesystem,system,serialization,thread --prefix=/apps/boost \
+  && ./b2 install \
+  && cd /tmp ; rm -rf boost_1_56_0
+
+ENV PATH=/apps/boost/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/boost/lib:$LD_LIBRARY_PATH
+
+RUN cd /tmp ;curl -SL  https://gitlab.com/Molcas/OpenMolcas/-/archive/v24.02/OpenMolcas-v24.02.tar.gz  | tar xzf - \
+  && cd OpenMolcas-v24.02/  \
+  && mkdir -p build ; cd build \
+#  && GAROOT=/apps/ga FC=mpiifort CC=mpiicc CXX=mpiicpc cmake -DGA=ON -DLINALG=MKL -DOPENMP=ON -DCMAKE_INSTALL_PREFIX=/apps/openmolcas -DDMRG=ON  -DNEVPT2=ON ../ \
+  && GAROOT=/apps/ga FC=mpiifx CC=mpiicx CXX=mpiicpx cmake -DMPI=ON -DGA=ON -DLINALG=MKL -DOPENMP=ON -DCMAKE_INSTALL_PREFIX=/apps/openmolcas   ../ \
+  && make ; make install  \
+  && cd /tmp ; rm -rf OpenMolcas-v24.02
+
+FROM ghcr.io/charliecpeterson/build:runtime-rocky9.3-oneapi2024.1  as final
+
+RUN yum -y update && \
+    yum install -y python3-devel python3-pip
+
+# Copy apps from the devel stage
+COPY --from=devel /apps /apps
+
+ENV PATH=/apps/ga/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/ga/lib:$LD_LIBRARY_PATH
+ENV PATH=/apps/boost/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/boost/lib:$LD_LIBRARY_PATH
+
+ENV PATH=/apps/openmolcas:/apps/openmolcas/bin:$PATH
+ENV LD_LIBRARY_PATH=/apps/openmolcas/lib:$LD_LIBRARY_PATH

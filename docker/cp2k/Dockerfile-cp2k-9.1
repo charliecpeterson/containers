@@ -1,0 +1,23 @@
+#
+FROM ghcr.io/charliecpeterson/basebuild:ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
+RUN apt update ; DEBIAN_FRONTEND=noninteractive   apt-get install -y --no-install-recommends  gcc-multilib  openssl libssl-dev ssh wget make git curl wget tk-dev libgdbm-dev libc6-dev libbz2-dev 
+
+RUN cd /tmp ; curl -SL  https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz | tar xzf - \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python \
+    && make ; make install \
+    && cd /tmp ; rm -r Python-3.9.10 \  
+    && ln -s /apps/python/bin/python3 /apps/python/bin/python
+
+ENV PATH=/apps/python/bin:$PATH
+
+RUN cd /apps ; wget  https://github.com/cp2k/cp2k/releases/download/v9.1.0/cp2k-9.1.tar.bz2 ; tar -vxf cp2k-9.1.tar.bz2 ; rm cp2k-9.1.tar.bz2 \
+  && cd cp2k-9.1/tools/toolchain \
+  && ./install_cp2k_toolchain.sh  --with-mkl=system --with-intelmpi=system --with-sirius=no  --with-cmake=system --mpi-mode=intelmpi --no-check-certificate --math-mode=mkl \
+  && cd ../.. ; make ARCH=Linux-x86-64-intel-minimal VERSION="psmp"
+
+
+FROM ghcr.io/charliecpeterson/baserun:ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+COPY --from=build /apps/ /apps/
+
+ENV PATH=/apps/python/bin:/apps/cp2k-9.1/exe/Linux-x86-64-intel-minimal:$PATH
+

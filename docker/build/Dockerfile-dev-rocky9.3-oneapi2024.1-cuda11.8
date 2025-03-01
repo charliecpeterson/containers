@@ -1,0 +1,34 @@
+# Base image with CUDA toolkit, optimized for CUDA development
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1
+
+LABEL Author="Charles Peterson <charlie.c.peterson3@gmail.com>"
+
+# Install CUDA, cuDNN, TensorRT, and NCCL
+RUN wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run && \
+    sh cuda_11.8.0_520.61.05_linux.run --silent --toolkit && \
+    rm cuda_11.8.0_520.61.05_linux.run && \
+    wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/8.6.1/tars/TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-11.8.tar.gz && \
+    tar -xzf TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-11.8.tar.gz && \
+    cp -a TensorRT-8.6.1.6/bin/. /usr/local/bin/ && \
+    cp -a TensorRT-8.6.1.6/lib/. /usr/local/lib/ && \
+    cp -a TensorRT-8.6.1.6/include/. /usr/local/include/ && \
+    cp -a TensorRT-8.6.1.6/python/. /usr/local/lib/tensorrtpython && \
+    rm -rf TensorRT-8.6.1.6 TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-11.8.tar.gz && \
+    wget https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.5.0.96_cuda11-archive.tar.xz && \
+    tar -xf cudnn-linux-x86_64-8.5.0.96_cuda11-archive.tar.xz && \
+    cp -a cudnn-linux-x86_64-8.5.0.96_cuda11-archive/lib/. /usr/local/lib/ && \
+    cp -a cudnn-linux-x86_64-8.5.0.96_cuda11-archive/include/. /usr/local/include/ && \
+    rm -rf cudnn-linux-x86_64-8.5.0.96_cuda11-archive cudnn-linux-x86_64-8.5.0.96_cuda11-archive.tar.xz && \
+    git clone https://github.com/NVIDIA/nccl.git && \
+    cd nccl && git checkout v2.21.5-1 && make src.build CUDA_HOME=/usr/local/cuda-11.8 && \
+    cp -a build/include/. /usr/local/include/ && \
+    cp -a build/lib/. /usr/local/lib/ && \
+    cd / && rm -rf nccl
+
+
+# Set CUDA environment variables
+ENV CUDA_HOME=/usr/local/cuda-11.8 
+ENV PATH=${CUDA_HOME}/bin:${PATH} \
+    LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH} \
+    CPATH=${CUDA_HOME}/include:${CPATH}
+

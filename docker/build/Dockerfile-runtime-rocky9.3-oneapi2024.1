@@ -1,0 +1,39 @@
+# Rocky 9.3
+# Charles Peterson <charliecpeterson@gmail.com>
+# Created 4/2024
+
+FROM docker.io/rockylinux:9.3
+
+
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+# Install packages and set up oneAPI repository
+RUN dnf -y update && \
+    dnf install -y pkgconfig gcc gcc-gfortran gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel && \
+    dnf groupinstall -y "Development Tools" && \
+    echo -e "[oneAPI]\nname=Intel® oneAPI repository\nbaseurl=https://yum.repos.intel.com/oneapi\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB" > /etc/yum.repos.d/oneAPI.repo && \
+    dnf update -y && dnf install intel-oneapi-runtime-mkl intel-basekit-runtime-2024.1 intel-hpckit-runtime-2024.1 -y && \
+    dnf clean all
+
+ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib:/usr/local/lib64:$LD_LIBRARY_PATH
+
+ENV TBBROOT=/opt/intel/oneapi/tbb/latest/env/..
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV PKG_CONFIG_PATH=/opt/intel/oneapi/tbb/latest/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/latest/lib/pkgconfig:/opt/intel/oneapi/dnnl/latest/lib/pkgconfig:/opt/intel/oneapi/compiler/latest/lib/pkgconfig
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/latest/opt/mpi/libfabric/lib/prov:/usr/lib64/libfabric
+ENV DNNLROOT=/opt/intel/oneapi/dnnl/latest
+ENV DIAGUTIL_PATH=/opt/intel/oneapi/compiler/latest/etc/compiler/sys_check/sys_check.sh
+ENV MANPATH=/opt/intel/oneapi/mpi/latest/share/man:/opt/intel/oneapi/compiler/latest/share/man:
+ENV LANG=C.UTF-8
+ENV CMAKE_PREFIX_PATH=/opt/intel/oneapi/tbb/latest/env/..:/opt/intel/oneapi/dnnl/latest/lib/cmake:/opt/intel/oneapi/compiler/latest
+ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/latest
+ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/dnnl/latest/lib:/opt/intel/oneapi/compiler/latest/lib:$LIBRARY_PATH
+ENV OCL_ICD_FILENAMES=/opt/intel/oneapi/compiler/latest/lib/libintelocl.so
+ENV CLASSPATH=/opt/intel/oneapi/mpi/latest/share/java/mpi.jar
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest/opt/mpi/libfabric/lib:/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/dnnl/latest/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH
+ENV DEBUGINFOD_URLS=https://debuginfod.centos.org/ 
+ENV NLSPATH=/opt/intel/oneapi/compiler/latest/lib/compiler/locale/%l_%t/%N
+ENV PATH=/opt/intel/oneapi/mpi/latest/bin:/opt/intel/oneapi/dev-utilities/latest/bin:/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+ENV CPATH=/opt/intel/oneapi/tbb/latest/env/../include:/opt/intel/oneapi/mpi/latest/include:/opt/intel/oneapi/dnnl/latest/include:/opt/intel/oneapi/dev-utilities/latest/include:$CPATH
+

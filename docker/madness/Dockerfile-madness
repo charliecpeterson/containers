@@ -1,0 +1,27 @@
+#
+FROM ghcr.io/charliecpeterson/base:build-ubuntu20.04-gcc10.3.0-oneapi2022.1.2 as build
+
+RUN apt update ; apt-get install -y --no-install-recommends \
+    python3-dev gcc-multilib ssh git make 
+
+RUN mkdir -pv /apps ; cd /apps \
+   && git clone https://github.com/m-a-d-n-e-s-s/madness \
+   && cd madness \
+   && git checkout e60518b5926510fe1d153d1d03a6a25d2a081b41 \
+   && mkdir build ; cd build \
+   && cmake -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DMPI_CXX_COMPILER=mpiicpc -DMPI_C_COMPILER=mpiicc -DCMAKE_INSTALL_PREFIX=/apps/madness-build .. \
+   && make everything ; make install
+
+
+
+
+FROM ghcr.io/charliecpeterson/base:run-ubuntu20.04-gcc10.3.0-oneapi2022.1.2
+RUN apt update ; apt-get install -y --no-install-recommends \
+    time python3  \
+    && rm -rf /var/lib/apt/lists/* 
+
+COPY --from=build /apps/ /apps/
+
+ENV PATH=/apps/madness-build/bin:$PATH
+
+

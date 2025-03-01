@@ -1,0 +1,21 @@
+FROM nvcr.io/nvidia/cuda:12.6.2-cudnn-devel-ubuntu24.04
+
+RUN apt-get update -y  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y zlib1g-dev wget  curl pciutils libssl-dev libffi-dev 
+
+#RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
+#    && dpkg -i cuda-keyring_1.1-1_all.deb ; apt-get update -y ; DEBIAN_FRONTEND=noninteractive apt-get -y install cuda-runtime-12-6
+#ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda/lib64
+#ENV PATH=/usr/local/cuda/bin:${PATH}
+#ENV CPATH=/usr/local/cuda/include:${CPATH}
+RUN wget https://www.python.org/ftp/python/3.11.10/Python-3.11.10.tgz ; tar -vxf Python-3.11.10.tgz ; rm Python-3.11.10.tgz
+RUN cd Python-3.11.10 ; ./configure ; make ; make install ; cd / ; rm -rf Python-3.11.10
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+ENV OLLAMA_HOST=0.0.0.0:8080
+RUN curl -fsSL https://ollama.com/install.sh | sh
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_VISIBLE_DEVICES=all
+EXPOSE 11434
+ENTRYPOINT ["ollama"]
+CMD ["serve"]

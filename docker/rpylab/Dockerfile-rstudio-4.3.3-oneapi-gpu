@@ -1,0 +1,25 @@
+# Builder stage
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1-cuda11.8 
+
+ENV S6_VERSION=v2.1.0.2 \
+    RSTUDIO_VERSION=2023.12.1-402 \
+    QUARTO_VERSION=1.4.553 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8 \
+    R_HOME=/usr/local/lib64/R \
+    R_VERSION=4.3.3 
+
+COPY scripts /scripts
+ENV USE_ONEAPI=TRUE 
+
+# Install and build everything
+RUN /scripts/install_R.sh && \
+    /scripts/install_Rpackages.sh && \
+    /scripts/install_rstudio.sh && \
+    /scripts/install_quarto.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/scripts/startup.sh"]
+
+

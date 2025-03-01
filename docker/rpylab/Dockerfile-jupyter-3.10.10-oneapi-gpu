@@ -1,0 +1,22 @@
+# Builder stage
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1-cuda11.8 
+
+ENV PYTHON_VER=3.10.10 \
+    TF_VERSION=2.12.1 \
+    TORCH_VER=2.2.2 \
+    QUARTO_VERSION=1.4.553
+
+COPY scripts /scripts
+ENV USE_ONEAPI=TRUE 
+
+# Install and build everything
+RUN /scripts/install_python.sh && \
+    /scripts/install_pythonpackages.sh && \
+    /scripts/install_quarto.sh
+
+# Expose any necessary ports
+EXPOSE 8888
+
+# Set the entrypoint
+ENTRYPOINT ["/scripts/startup.sh"]
+

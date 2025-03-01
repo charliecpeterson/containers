@@ -1,0 +1,31 @@
+# Base image with development tools included
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1 as devel
+
+# Labels
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+# Create a simple MPI program directly in the Dockerfile
+RUN mkdir -pv /apps ; echo '#include <mpi.h>' > /apps/hello_mpi.c \
+    && echo '#include <stdio.h>' >> /apps/hello_mpi.c \
+    && echo '#include <unistd.h>' >> /apps/hello_mpi.c \
+    && echo 'int main(int argc, char **argv) {' >> /apps/hello_mpi.c \
+    && echo '    MPI_Init(&argc, &argv);' >> /apps/hello_mpi.c \
+    && echo '    int world_rank;' >> /apps/hello_mpi.c \
+    && echo '    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);' >> /apps/hello_mpi.c \
+    && echo '    char hostname[256];' >> /apps/hello_mpi.c \
+    && echo '    gethostname(hostname, 255);' >> /apps/hello_mpi.c \
+    && echo '    printf("Hello from processor %d on %s\\n", world_rank, hostname);' >> /apps/hello_mpi.c \
+    && echo '    MPI_Finalize();' >> /apps/hello_mpi.c \
+    && echo '    return 0;' >> /apps/hello_mpi.c \
+    && echo '}' >> /apps/hello_mpi.c
+
+# Compile the MPI program
+RUN mpiicx /apps/hello_mpi.c -o /apps/hello_mpi
+
+# Set the base image for the runtime environment
+FROM ghcr.io/charliecpeterson/build:runtime-rocky9.3-oneapi2024.1 as final
+
+# Copy the compiled MPI application from the development stage
+COPY --from=devel /apps/hello_mpi /apps/hello_mpi
+
+

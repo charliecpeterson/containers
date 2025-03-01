@@ -1,0 +1,38 @@
+Bootstrap: docker
+From: rockylinux/rockylinux:9.3
+
+%labels
+Author Charles Peterson <charles.c.peterson3@gmail.com>
+
+
+%post
+yum -y update \
+&& yum install -y  pkgconfig gcc gcc-gfortran gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel
+yum groupinstall -y "Development Tools"
+
+
+tee > /tmp/oneAPI.repo << EOF
+[oneAPI]
+name=Intel® oneAPI repository
+baseurl=https://yum.repos.intel.com/oneapi
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+EOF
+mv /tmp/oneAPI.repo /etc/yum.repos.d
+yum update -y ; yum install intel-basekit intel-hpckit -y
+
+/molpro-mpp-2024.1.0.linux_x86_64_mpipr.sh <<EOF
+
+
+dap
+cnybYY8P
+EOF
+
+
+%files 
+molpro-mpp-2024.1.0.linux_x86_64_mpipr.sh /molpro-mpp-2024.1.0.linux_x86_64_mpipr.sh
+
+
+

@@ -1,0 +1,21 @@
+FROM docker.io/rockylinux/rockylinux:9.3
+
+ENV PATH=/apps/python3/bin:$PATH
+#ENV PYTHONPATH=/apps/python3
+RUN yum update -y \
+    && yum install -y epel-release ; yum install -y \
+      xz-devel epel-release hdf5 wget make openssl-devel bzip2-devel libffi-devel zlib-devel gcc \
+    && cd /tmp ; wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz \
+    && tar -vxf Python-3.9.10.tgz ; rm Python-3.9.10.tgz  \
+    && cd Python-3.9.10 ; ./configure --prefix=/apps/python3 \
+    && make ; make install \
+    && cd /tmp ; rm -r Python-3.9.10 \ 
+    && ln -s /apps/python3/bin/pip3 /apps/python3/bin/pip \
+    && ln -s /apps/python3/bin/python3 /apps/python3/bin/python \
+    && pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 \ 
+    && pip install einops ultralytics opencv-python piexif transformers>=4.28.1 tokenizers>=0.13.3 sentencepiece safetensors>=0.4.2 aiohttp pyyaml Pillow scipy tqdm psutil kornia>=0.7.1 spandrel soundfile torchsde
+
+
+WORKDIR /apps/projects/ComfyUI
+EXPOSE 8188
+CMD ["python", "main.py", "--listen", "0.0.0.0"]

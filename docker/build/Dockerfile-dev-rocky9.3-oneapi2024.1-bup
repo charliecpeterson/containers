@@ -1,0 +1,62 @@
+# Rocky 9.3
+# Charles Peterson <charliecpeterson@gmail.com>
+# Created 4/2024
+
+FROM docker.io/rockylinux:9.3
+
+
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+# Install packages and set up oneAPI repository
+RUN dnf -y update && \
+    dnf install -y cmake pkgconfig gcc gcc-gfortran gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel && \
+    dnf groupinstall -y "Development Tools" && \
+    echo -e "[oneAPI]\nname=Intel® oneAPI repository\nbaseurl=https://yum.repos.intel.com/oneapi\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB" > /etc/yum.repos.d/oneAPI.repo && \
+    dnf update -y && dnf install intel-basekit-2024.1 intel-hpckit-2024.1 -y && \
+    dnf clean all
+
+
+ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib:/usr/local/lib64:$LD_LIBRARY_PATH
+
+ENV TBBROOT=/opt/intel/oneapi/tbb/latest/env/..
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV PKG_CONFIG_PATH=/opt/intel/oneapi/vtune/latest/include/pkgconfig/lib64:/opt/intel/oneapi/tbb/latest/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/latest/lib/pkgconfig:/opt/intel/oneapi/mkl/latest/lib/pkgconfig:/opt/intel/oneapi/ippcp/latest/lib/pkgconfig:/opt/intel/oneapi/dpl/latest/lib/pkgconfig:/opt/intel/oneapi/dnnl/latest/lib/pkgconfig:/opt/intel/oneapi/dal/latest/lib/pkgconfig:/opt/intel/oneapi/compiler/latest/lib/pkgconfig:/opt/intel/oneapi/ccl/latest/lib/pkgconfig/:/opt/intel/oneapi/advisor/latest/include/pkgconfig/lib64:$PKG_CONFIG_PATH
+ENV ACL_BOARD_VENDOR_PATH=/opt/Intel/OpenCLFPGA/oneAPI/Boards
+ENV FPGA_VARS_DIR=/opt/intel/oneapi/compiler/latest/opt/oclfpga
+ENV CCL_ROOT=/opt/intel/oneapi/ccl/latest
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/latest/opt/mpi/libfabric/lib/prov:/usr/lib64/libfabric
+ENV DNNLROOT=/opt/intel/oneapi/dnnl/latest
+ENV DIAGUTIL_PATH=/opt/intel/oneapi/dpcpp-ct/latest/etc/dpct/sys_check/sys_check.sh:/opt/intel/oneapi/debugger/latest/etc/debugger/sys_check/sys_check.py:/opt/intel/oneapi/compiler/latest/etc/compiler/sys_check/sys_check.sh
+ENV ADVISOR_2024_DIR=/opt/intel/oneapi/advisor/latest
+ENV CCL_CONFIGURATION=cpu_gpu_dpcpp
+ENV DPL_ROOT=/opt/intel/oneapi/dpl/latest
+ENV MANPATH=/opt/intel/oneapi/mpi/latest/share/man:/opt/intel/oneapi/debugger/latest/share/man:/opt/intel/oneapi/compiler/latest/share/man:
+ENV GDB_INFO=/opt/intel/oneapi/debugger/latest/share/info/
+ENV CCL_CONFIGURATION_PATH=
+ENV LANG=C.UTF-8
+ENV APM=/opt/intel/oneapi/advisor/latest/perfmodels
+ENV CMAKE_PREFIX_PATH=/opt/intel/oneapi/tbb/latest/env/..:/opt/intel/oneapi/mkl/latest/lib/cmake:/opt/intel/oneapi/ipp/latest/lib/cmake/ipp:/opt/intel/oneapi/dpl/latest/lib/cmake/oneDPL:/opt/intel/oneapi/dnnl/latest/lib/cmake:/opt/intel/oneapi/dal/latest:/opt/intel/oneapi/compiler/latest
+ENV CMPLR_ROOT=/opt/intel/oneapi/compiler/latest
+ENV FPGA_VARS_ARGS=--include-intel-llvm
+ENV INFOPATH=/opt/intel/oneapi/debugger/latest/opt/debugger/lib
+ENV IPPROOT=/opt/intel/oneapi/ipp/latest
+ENV IPP_TARGET_ARCH=intel64
+ENV DALROOT=/opt/intel/oneapi/dal/latest
+ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/mkl/latest/lib/:/opt/intel/oneapi/ippcp/latest/lib/:/opt/intel/oneapi/ipp/latest/lib:/opt/intel/oneapi/dpl/latest/lib:/opt/intel/oneapi/dnnl/latest/lib:/opt/intel/oneapi/dal/latest/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/ccl/latest/lib/:$LIBRARY_PATH
+ENV DAL_MAJOR_BINARY=2
+ENV IPPCRYPTOROOT=/opt/intel/oneapi/ippcp/latest
+ENV IPPCP_TARGET_ARCH=intel64
+ENV VTUNE_PROFILER_2024_DIR=/opt/intel/oneapi/vtune/latest
+ENV OCL_ICD_FILENAMES=libintelocl_emu.so:libalteracl.so:/opt/intel/oneapi/compiler/latest/lib/libintelocl.so
+ENV CLASSPATH=/opt/intel/oneapi/mpi/latest/share/java/mpi.jar
+ENV INTELFPGAOCLSDKROOT=/opt/intel/oneapi/compiler/latest/opt/oclfpga
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest/opt/mpi/libfabric/lib:/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/mkl/latest/lib:/opt/intel/oneapi/ippcp/latest/lib/:/opt/intel/oneapi/ipp/latest/lib:/opt/intel/oneapi/dpl/latest/lib:/opt/intel/oneapi/dnnl/latest/lib:/opt/intel/oneapi/debugger/latest/opt/debugger/lib:/opt/intel/oneapi/dal/latest/lib:/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/ccl/latest/lib/:$LD_LIBRARY_PATH
+ENV VTUNE_PROFILER_DIR=/opt/intel/oneapi/vtune/latest
+ENV MKLROOT=/opt/intel/oneapi/mkl/latest
+ENV DEBUGINFOD_URLS=https://debuginfod.centos.org/
+ENV DAL_MINOR_BINARY=0
+ENV NLSPATH=/opt/intel/oneapi/mkl/latest/share/locale/%l_%t/%N:/opt/intel/oneapi/compiler/latest/lib/compiler/locale/%l_%t/%N
+ENV PATH=/opt/intel/oneapi/vtune/latest/bin64:/opt/intel/oneapi/mpi/latest/bin:/opt/intel/oneapi/mkl/latest/bin/:/opt/intel/oneapi/dpcpp-ct/latest/bin:/opt/intel/oneapi/dev-utilities/latest/bin:/opt/intel/oneapi/debugger/latest/opt/debugger/bin:/opt/intel/oneapi/compiler/latest/opt/oclfpga/bin:/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/opt/intel/oneapi/advisor/latest/bin64:/root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+ENV CPATH=/opt/intel/oneapi/tbb/latest/env/../include:/opt/intel/oneapi/mpi/latest/include:/opt/intel/oneapi/mkl/latest/include:/opt/intel/oneapi/ippcp/latest/include:/opt/intel/oneapi/ipp/latest/include:/opt/intel/oneapi/dpl/latest/include:/opt/intel/oneapi/dpcpp-ct/latest/include:/opt/intel/oneapi/dnnl/latest/include:/opt/intel/oneapi/dev-utilities/latest/include:/opt/intel/oneapi/dal/latest/include/dal:/opt/intel/oneapi/compiler/latest/opt/oclfpga/include:/opt/intel/oneapi/ccl/latest/include:$CPATH
+

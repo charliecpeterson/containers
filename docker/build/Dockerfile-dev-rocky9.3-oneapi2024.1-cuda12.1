@@ -1,0 +1,41 @@
+# Rocky 9.3
+# Charles Peterson <charliecpeterson@gmail.com>
+# Created 4/2024
+
+#Bulding Cmake
+FROM docker.io/rockylinux:9.3
+
+
+LABEL Author="Charles Peterson <charles.c.peterson3@gmail.com>"
+
+# Install packages and set up oneAPI repository
+RUN yum -y update && \
+    yum install -y cmake pkgconfig gcc gcc-gfortran gcc-c++ make wget unzip gmp-devel mpfr-devel libmpc-devel openssl-devel && \
+    yum groupinstall -y "Development Tools" && \
+    echo -e "[oneAPI]\nname=Intel® oneAPI repository\nbaseurl=https://yum.repos.intel.com/oneapi\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB" > /etc/yum.repos.d/oneAPI.repo && \
+    yum update -y && yum install intel-basekit-2024.1 intel-hpckit-2024.1 -y
+
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo && \
+    dnf update -y && \
+    dnf install -y cuda-12-1 cuda-toolkit-12-1 libnccl-devel libnccl tensorrt-devel tensorrt libcudnn8-devel libcudnn8
+
+
+ENV CUDA_HOME=/usr/local/cuda-12.1
+ENV PATH=${CUDA_HOME}/bin:$PATH
+ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
+ENV CPATH=${CUDA_HOME}/include:$CPATH
+
+ENV PKG_CONFIG_PATH=/opt/intel/oneapi/vtune/latest/include/pkgconfig/lib64:/opt/intel/oneapi/tbb/latest/env/../lib/pkgconfig:/opt/intel/oneapi/mpi/latest/lib/pkgconfig:/opt/intel/oneapi/mkl/latest/lib/pkgconfig:/opt/intel/oneapi/ippcp/latest/lib/pkgconfig:/opt/intel/oneapi/dpl/latest/lib/pkgconfig:/opt/intel/oneapi/dnnl/latest/lib/pkgconfig:/opt/intel/oneapi/dal/latest/lib/pkgconfig:/opt/intel/oneapi/compiler/latest/lib/pkgconfig:/opt/intel/oneapi/ccl/latest/lib/pkgconfig/:/opt/intel/oneapi/advisor/latest/include/pkgconfig/lib64:$PKG_CONFIG_PATH
+ENV TBBROOT=/opt/intel/oneapi/tbb/latest/env/..
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV CCL_ROOT=/opt/intel/oneapi/ccl/latest
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/latest/opt/mpi/libfabric/lib/prov:/usr/lib64/libfabric
+ENV DPL_ROOT=/opt/intel/oneapi/dpl/latest
+ENV LIBRARY_PATH=/opt/intel/oneapi/tbb/latest/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/mkl/latest/lib/:/opt/intel/oneapi/ippcp/latest/lib/:/opt/intel/oneapi/ipp/latest/lib:/opt/intel/oneapi/dpl/latest/lib:/opt/intel/oneapi/dnnl/latest/lib:/opt/intel/oneapi/dal/latest/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/ccl/latest/lib/:$LIBRARY_PATH
+ENV MKLROOT=/opt/intel/oneapi/mkl/latest
+ENV PATH=/opt/intel/oneapi/vtune/latest/bin64:/opt/intel/oneapi/mpi/latest/bin:/opt/intel/oneapi/mkl/latest/bin/:/opt/intel/oneapi/dpcpp-ct/latest/bin:/opt/intel/oneapi/dev-utilities/latest/bin:/opt/intel/oneapi/debugger/latest/opt/debugger/bin:/opt/intel/oneapi/compiler/latest/opt/oclfpga/bin:/opt/intel/oneapi/compiler/latest/bin:/opt/intel/oneapi/advisor/latest/bin64:$PATH
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/mpi/latest/opt/mpi/libfabric/lib:/opt/intel/oneapi/mpi/latest/lib:/opt/intel/oneapi/mkl/latest/lib:/opt/intel/oneapi/ippcp/latest/lib:/opt/intel/oneapi/ipp/latest/lib:/opt/intel/oneapi/dpl/latest/lib:/opt/intel/oneapi/dnnl/latest/lib:/opt/intel/oneapi/debugger/latest/opt/debugger/lib:/opt/intel/oneapi/dal/latest/lib:/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/ccl/latest/lib/:$LD_LIBRARY_PATH
+
+

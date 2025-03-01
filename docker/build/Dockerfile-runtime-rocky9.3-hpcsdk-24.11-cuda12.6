@@ -1,0 +1,38 @@
+FROM docker.io/rockylinux:9.3
+
+# Set environment variables
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    NVIDIA_VISIBLE_DEVICES=all \
+    LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/nccl/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/hpcx/hpcx-2.20/ompi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/math_libs/12.6/lib64 \
+    PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/hpcx/hpcx-2.20/ompi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+COPY --from=ghcr.io/charliecpeterson/build:dev-rocky9.3-hpcsdk-24.11-cuda12.6 \
+    /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/nccl/lib /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/nccl/lib
+
+COPY --from=ghcr.io/charliecpeterson/build:dev-rocky9.3-hpcsdk-24.11-cuda12.6 \
+    /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/lib64 /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/lib64
+
+COPY --from=ghcr.io/charliecpeterson/build:dev-rocky9.3-hpcsdk-24.11-cuda12.6 \
+    /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/math_libs/12.6/lib64 /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/math_libs/12.6/lib64
+
+COPY --from=ghcr.io/charliecpeterson/build:dev-rocky9.3-hpcsdk-24.11-cuda12.6 \
+    /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/hpcx/hpcx-2.20 /opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/hpcx/hpcx-2.20
+
+RUN yum install -y --disablerepo=mlnx\* \
+    libibverbs \
+    librdmacm \
+    rdma-core \
+    diffutils \
+    libatomic \
+    numactl-libs \
+    openssh-clients && \
+    rm -rf /var/cache/yum/*
+
+#COPY --from=ghcr.io/charliecpeterson/build:dev-rocky9.3-hpcsdk-24.11-cuda12.6 \
+#    /usr/local/gdrcopy /usr/local/gdrcopy
+
+#RUN echo "/usr/local/gdrcopy/lib" >> /etc/ld.so.conf.d/hpccm.conf && ldconfig
+
+
+
+CMD ["/bin/bash"]

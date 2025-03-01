@@ -1,0 +1,17 @@
+FROM ghcr.io/charliecpeterson/build:dev-rocky9.3-oneapi2024.1-cuda11.8
+
+ENV PYTHON_VER=3.10.10 \
+    TF_VERSION=2.12.1 \
+    USE_ONEAPI=TRUE \
+    USE_PYTHON=TRUE
+
+COPY scripts /scripts
+
+RUN /scripts/install_python.sh && \
+    /scripts/install_pythonpackages.sh && \
+    dnf clean all
+
+EXPOSE 8787
+
+ENTRYPOINT ["/scripts/startup.sh"]
+

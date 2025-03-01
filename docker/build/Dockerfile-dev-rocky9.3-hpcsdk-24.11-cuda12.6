@@ -1,0 +1,16 @@
+# Use a minimal base image
+FROM rockylinux:9.3
+
+RUN dnf install -y wget gcc g++
+
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    NVIDIA_VISIBLE_DEVICES=all \
+    CPATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/math_libs/12.6/include:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/include:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/compilers/include \
+    LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/compilers/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/nccl/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/hpcx/hpcx-2.20/ompi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/math_libs/12.6/lib64 \
+    PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/cuda/12.6/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/compilers/bin:/opt/nvidia/hpc_sdk/Linux_x86_64/24.11/comm_libs/12.6/hpcx/hpcx-2.20/ompi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+
+RUN wget https://developer.download.nvidia.com/hpc-sdk/24.11/nvhpc_2024_2411_Linux_x86_64_cuda_12.6.tar.gz \
+    && tar xpzf nvhpc_2024_2411_Linux_x86_64_cuda_12.6.tar.gz \ 
+    && NVHPC_SILENT=true NVHPC_INSTALL_DIR=/opt/nvidia/hpc_sdk  nvhpc_2024_2411_Linux_x86_64_cuda_12.6/install \
+    && rm -rf nvhpc_2024_2411_Linux_x86_64_cuda_12.6*
